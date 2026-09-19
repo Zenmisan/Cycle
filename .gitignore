@@ -54,6 +54,7 @@ app.*.map.json
 .agents/
 PLAN.md
 design-system/
+site/
 
 # Rust and Go build artifacts
 **/target/

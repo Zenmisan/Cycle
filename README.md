@@ -137,7 +137,7 @@ cd rust && cargo test && cd ..
 # 2. Run Flutter static analysis (0 issues)
 flutter analyze
 
-# 3. Run Flutter unit, widget, Wi-Fi Direct, and import tests (15 passed)
+# 3. Run Flutter unit, widget, Wi-Fi Direct, import, and recurrence tests (23 passed)
 flutter test
 
 # 4. Run Go relay server unit & integration tests (7 passed)
@@ -148,11 +148,12 @@ cd relay-server && go test -v ./... && cd ..
 
 ## 📚 Documentation Index
 
+- [Interactive Landing Page](site/index.html) — Product showcase, interactive proximity radar, and live CRDT simulator.
 - [System Architecture](ARCHITECTURE.md) — Comprehensive guide to the single-store boundary, CRDTs, and subsystem design.
 - [Multi-Tier Transports](docs/TRANSPORTS.md) — Detailed guide to the Wi-Fi Direct, Local LAN, BLE GATT, and Relay hierarchy.
 - [Single-Store CRDT Storage](docs/CRDT_STORAGE.md) — Automerge schema, SQLite `sync_changes` persistence, and vector clock exchange.
 - [Proximity Sync Protocol](docs/SYNC_PROTOCOL.md) — BLE GATT characteristics, 10-byte binary frame header layout, and state machine.
-- [Platform Setup Guide](docs/PLATFORM_GUIDE.md) — Linux, Android NDK cross-compilation, iOS Swift GATT bridge, and Windows build instructions.
+- [Platform Setup Guide](docs/PLATFORM_GUIDE.md) — Linux, Android NDK cross-compilation, macOS dylib, iOS Swift GATT bridge, and Windows build instructions.
 - [Data Import & Migration](docs/IMPORT_MIGRATION.md) — Step-by-step guides for importing from Vikunja, Todoist, and Super Productivity.
 - [Relay Server Deployment](docs/RELAY_DEPLOYMENT.md) — Production deployment instructions for the self-hosted Go relay server with Docker and TLS.
 - [Contributing Guide](CONTRIBUTING.md) — Development setup, codegen instructions, and commit standards.
