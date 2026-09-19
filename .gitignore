@@ -52,5 +52,26 @@ app.*.map.json
 PLAN.md
 
 # Rust build artifacts (rebuilt by scripts/build_android_rust.sh / cargo build)
-/rust/target/
+**/target/
 /android/app/src/main/jniLibs/
+
+# Local SQLite databases and write-ahead logs
+*.sqlite
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Environment & local secrets
+.env
+.env.*
+*.env
+
+# Temporary and backup files
+*~
+*.bak
+*.tmp
+

@@ -17,20 +17,33 @@ pub struct TaskRecord {
     pub updated_at_millis: i64,
 }
 
-/// Wraps a single Automerge document holding all tasks under a root "tasks" map,
-/// keyed by task id. This is the whole CRDT surface area — nothing here knows or
-/// cares how bytes arrive (BLE, LAN, tests); see PLAN.md's Drift<->Automerge boundary.
+/// Wraps a single Automerge document holding tasks directly on the document
+/// root, one nested map per task keyed `task:<id>`.
+///
+/// Deliberately NOT nested under an intermediate "tasks" container object:
+/// `ROOT` is the one object guaranteed to have the same identity across every
+/// independently-created device document, because Automerge allocates a fresh,
+/// distinct object ID each time `put_object` creates a *new* container. Two
+/// devices that each call `put_object(ROOT, "tasks", Map)` before ever syncing
+/// end up with two different objects at that key — a genuine concurrent-write
+/// conflict, where `get()` silently returns only one winner and the other
+/// device's entire task list becomes unreadable post-merge. Keying tasks
+/// directly under `ROOT` (unique-per-task key, so only the task's own creator
+/// ever allocates its object) sidesteps this. See PLAN.md's Drift<->Automerge
+/// boundary — this is the whole CRDT surface area, no networking here.
 pub struct TaskDoc {
     doc: AutoCommit,
 }
 
+fn task_key(id: &str) -> String {
+    format!("task:{id}")
+}
+
 impl TaskDoc {
     pub fn new() -> Self {
-        let mut doc = AutoCommit::new();
-        doc.put_object(ROOT, "tasks", ObjType::Map)
-            .expect("root tasks map");
-        doc.commit();
-        Self { doc }
+        Self {
+            doc: AutoCommit::new(),
+        }
     }
 
     /// Reconstruct a document from previously persisted change bytes
@@ -44,24 +57,15 @@ impl TaskDoc {
             .map_err(|e| e.to_string())
     }
 
-    fn tasks_obj(&self) -> automerge::ObjId {
-        self.doc
-            .get(ROOT, "tasks")
-            .ok()
-            .flatten()
-            .map(|(_, id)| id)
-            .expect("tasks map must exist")
-    }
-
     /// Insert or overwrite a task's fields (last-write-wins per field, which is
     /// what Automerge's map `put` gives us — good enough for scalar task fields).
     pub fn upsert_task(&mut self, task: &TaskRecord) -> Result<(), String> {
-        let tasks = self.tasks_obj();
-        let task_obj = match self.doc.get(&tasks, task.id.as_str()).map_err(|e| e.to_string())? {
+        let key = task_key(&task.id);
+        let task_obj = match self.doc.get(ROOT, key.as_str()).map_err(|e| e.to_string())? {
             Some((_, id)) => id,
             None => self
                 .doc
-                .put_object(&tasks, task.id.as_str(), ObjType::Map)
+                .put_object(ROOT, key.as_str(), ObjType::Map)
                 .map_err(|e| e.to_string())?,
         };
 
@@ -113,10 +117,12 @@ impl TaskDoc {
 
     /// Read every task currently in the document.
     pub fn all_tasks(&self) -> Vec<TaskRecord> {
-        let tasks = self.tasks_obj();
         let mut out = Vec::new();
-        for (id, _value, task_obj) in self.doc.map_range(&tasks, ..) {
-            out.push(self.read_task(&id.to_string(), &task_obj));
+        for item in self.doc.map_range(ROOT, "task:".to_string()..="task;".to_string()) {
+            if let Some(id) = item.key.strip_prefix("task:") {
+                let task_obj = item.id();
+                out.push(self.read_task(id, &task_obj));
+            }
         }
         out
     }
@@ -194,11 +200,12 @@ impl Default for TaskDoc {
     }
 }
 
-/// One sync round's outcome: what changed locally as a result of merging a
-/// peer's message, plus the bytes (if any) to send back to keep the round going.
+/// What changed locally as a result of merging a peer's message. Callers
+/// decide separately (via `SyncSession::generate_message`) whether there's
+/// anything to send back — never call `generate_message` and discard the
+/// result, that silently drops protocol state the peer is waiting on.
 pub struct MergeOutcome {
     pub updated_tasks: Vec<TaskRecord>,
-    pub response_bytes: Option<Vec<u8>>,
 }
 
 /// Drives Automerge's built-in sync protocol for one peer. Callers keep one of
@@ -215,14 +222,17 @@ impl SyncSession {
     }
 
     /// What this side should send next to make progress, if anything.
-    pub fn generate_message(&mut self, doc: &TaskDoc) -> Option<Vec<u8>> {
+    pub fn generate_message(&mut self, doc: &mut TaskDoc) -> Option<Vec<u8>> {
         use automerge::sync::SyncDoc;
         doc.doc
+            .sync()
             .generate_sync_message(&mut self.state)
             .map(|m| m.encode())
     }
 
     /// Apply a peer's sync message, returning the tasks that changed as a result.
+    /// After calling this, callers should call `generate_message` to see if a
+    /// reply is needed to keep the sync round going — don't skip that step.
     pub fn receive_message(
         &mut self,
         doc: &mut TaskDoc,
@@ -231,13 +241,12 @@ impl SyncSession {
         use automerge::sync::SyncDoc;
         let message = SyncMessage::decode(&bytes).map_err(|e| e.to_string())?;
         doc.doc
+            .sync()
             .receive_sync_message(&mut self.state, message)
             .map_err(|e| e.to_string())?;
 
-        let response_bytes = self.generate_message(doc);
         Ok(MergeOutcome {
             updated_tasks: doc.all_tasks(),
-            response_bytes,
         })
     }
 }
@@ -288,27 +297,23 @@ mod tests {
         let mut session_a = SyncSession::new();
         let mut session_b = SyncSession::new();
 
-        // Drive the exchange until neither side has anything left to say —
-        // no real transport involved, bytes are just handed directly across.
+        // Canonical Automerge sync loop: each side generates at most one
+        // message per round and it always gets delivered — never generate
+        // and discard, that drops protocol state the peer is waiting on.
+        let mut rounds = 0;
         loop {
-            let mut progressed = false;
-
-            if let Some(msg) = session_a.generate_message(&doc_a) {
-                progressed = true;
-                let outcome = session_b.receive_message(&mut doc_b, msg).unwrap();
-                if let Some(reply) = outcome.response_bytes {
-                    session_a.receive_message(&mut doc_a, reply).unwrap();
-                }
+            rounds += 1;
+            assert!(rounds < 20, "sync did not converge within 20 rounds");
+            let mut quiet = true;
+            if let Some(msg) = session_a.generate_message(&mut doc_a) {
+                quiet = false;
+                session_b.receive_message(&mut doc_b, msg).unwrap();
             }
-            if let Some(msg) = session_b.generate_message(&doc_b) {
-                progressed = true;
-                let outcome = session_a.receive_message(&mut doc_a, msg).unwrap();
-                if let Some(reply) = outcome.response_bytes {
-                    session_b.receive_message(&mut doc_b, reply).unwrap();
-                }
+            if let Some(msg) = session_b.generate_message(&mut doc_b) {
+                quiet = false;
+                session_a.receive_message(&mut doc_a, msg).unwrap();
             }
-
-            if !progressed {
+            if quiet {
                 break;
             }
         }

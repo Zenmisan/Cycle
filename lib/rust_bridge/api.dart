@@ -3,9 +3,183 @@
 
 // ignore_for_file: invalid_use_of_internal_member, unused_import, unnecessary_import
 
+import 'crdt.dart';
 import 'frb_generated.dart';
 
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+// These functions are ignored because they are not marked as `pub`: `get_ble_state`, `state`
+// These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `BleState`, `CrdtState`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`
+
 Future<String> ping({required String name}) =>
     RustLib.instance.api.crateApiPing(name: name);
+
+/// Opens (or creates) the Rust side's connection to the same SQLite file
+/// Drift manages, and reconstructs the task document from persisted changes.
+/// Call once at app startup, after Drift has created its tables.
+Future<void> initCrdt({required String dbPath}) =>
+    RustLib.instance.api.crateApiInitCrdt(dbPath: dbPath);
+
+/// Apply a local edit (from the Dart UI) to the task document and persist
+/// the resulting change bytes immediately.
+Future<void> applyTaskEdit({required TaskRecord task}) =>
+    RustLib.instance.api.crateApiApplyTaskEdit(task: task);
+
+/// What this side should send next to the given peer to make sync progress,
+/// if anything. Callers must always deliver a `Some` result to the peer —
+/// generating a message and not sending it drops protocol state.
+Future<Uint8List?> generateSyncMessage({required String peerId}) =>
+    RustLib.instance.api.crateApiGenerateSyncMessage(peerId: peerId);
+
+/// Apply a peer's sync message (however it arrived — this function doesn't
+/// know or care), returning every task whose fields changed as a result.
+/// After calling this, call `generate_sync_message` for the same peer to see
+/// if a reply is needed.
+Future<List<TaskRecord>> mergeIncoming({
+  required String peerId,
+  required List<int> bytes,
+}) => RustLib.instance.api.crateApiMergeIncoming(peerId: peerId, bytes: bytes);
+
+/// Every task currently in the document — useful for an initial full read
+/// (e.g. rehydrating Drift's relational tables after `init_crdt`).
+Future<List<TaskRecord>> allTasks() => RustLib.instance.api.crateApiAllTasks();
+
+/// Helper called by the BLE byte transport to feed incoming bytes into Automerge,
+/// persist the resulting change bytes, and generate the next sync response message.
+Future<Uint8List?> processCrdtSyncPayload({
+  required String peerId,
+  required List<int> bytes,
+}) => RustLib.instance.api.crateApiProcessCrdtSyncPayload(
+  peerId: peerId,
+  bytes: bytes,
+);
+
+/// Returns the local device ID used in BLE discovery announcements.
+Future<String> getDeviceId() => RustLib.instance.api.crateApiGetDeviceId();
+
+/// Returns whether BLE presence advertising is currently active.
+Future<bool> isBleAdvertising() =>
+    RustLib.instance.api.crateApiIsBleAdvertising();
+
+/// Starts advertising presence over BLE so nearby devices can discover this node.
+Future<String> startBleAdvertising() =>
+    RustLib.instance.api.crateApiStartBleAdvertising();
+
+/// Stops advertising presence over BLE.
+Future<void> stopBleAdvertising() =>
+    RustLib.instance.api.crateApiStopBleAdvertising();
+
+/// Scans for nearby Cycles peers.
+Future<List<BlePeer>> scanBlePeers() =>
+    RustLib.instance.api.crateApiScanBlePeers();
+
+/// Initiates a sync round with a discovered peer over BLE.
+Future<BleSyncReport> syncWithPeerBle({
+  required String peerId,
+  required String address,
+}) => RustLib.instance.api.crateApiSyncWithPeerBle(
+  peerId: peerId,
+  address: address,
+);
+
+/// Returns the list of all trusted peers.
+Future<List<BlePeerIdentity>> getTrustedPeers() =>
+    RustLib.instance.api.crateApiGetTrustedPeers();
+
+/// Updates peer trust status.
+Future<void> setPeerTrust({required String peerId, required bool trusted}) =>
+    RustLib.instance.api.crateApiSetPeerTrust(peerId: peerId, trusted: trusted);
+
+class BlePeer {
+  final String deviceId;
+  final String displayName;
+  final String address;
+  final int? rssi;
+
+  const BlePeer({
+    required this.deviceId,
+    required this.displayName,
+    required this.address,
+    this.rssi,
+  });
+
+  @override
+  int get hashCode =>
+      deviceId.hashCode ^
+      displayName.hashCode ^
+      address.hashCode ^
+      rssi.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is BlePeer &&
+          runtimeType == other.runtimeType &&
+          deviceId == other.deviceId &&
+          displayName == other.displayName &&
+          address == other.address &&
+          rssi == other.rssi;
+}
+
+class BlePeerIdentity {
+  final String deviceId;
+  final String displayName;
+  final bool trusted;
+  final BigInt lastSyncedAt;
+
+  const BlePeerIdentity({
+    required this.deviceId,
+    required this.displayName,
+    required this.trusted,
+    required this.lastSyncedAt,
+  });
+
+  @override
+  int get hashCode =>
+      deviceId.hashCode ^
+      displayName.hashCode ^
+      trusted.hashCode ^
+      lastSyncedAt.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is BlePeerIdentity &&
+          runtimeType == other.runtimeType &&
+          deviceId == other.deviceId &&
+          displayName == other.displayName &&
+          trusted == other.trusted &&
+          lastSyncedAt == other.lastSyncedAt;
+}
+
+class BleSyncReport {
+  final String peerId;
+  final bool success;
+  final String message;
+  final BigInt tasksUpdated;
+
+  const BleSyncReport({
+    required this.peerId,
+    required this.success,
+    required this.message,
+    required this.tasksUpdated,
+  });
+
+  @override
+  int get hashCode =>
+      peerId.hashCode ^
+      success.hashCode ^
+      message.hashCode ^
+      tasksUpdated.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is BleSyncReport &&
+          runtimeType == other.runtimeType &&
+          peerId == other.peerId &&
+          success == other.success &&
+          message == other.message &&
+          tasksUpdated == other.tasksUpdated;
+}

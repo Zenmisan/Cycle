@@ -24,3 +24,12 @@ class Tasks extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Automerge change bytes, written/read directly by the Rust core via a
+/// separate SQLite connection to this same database file. Dart never parses
+/// these bytes — see PLAN.md's Drift<->Automerge boundary.
+class SyncChanges extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  BlobColumn get changeBytes => blob()();
+  DateTimeColumn get createdAt => dateTime()();
+}

@@ -845,16 +845,279 @@ class TasksCompanion extends UpdateCompanion<Task> {
   }
 }
 
+class $SyncChangesTable extends SyncChanges
+    with TableInfo<$SyncChangesTable, SyncChange> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncChangesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _changeBytesMeta = const VerificationMeta(
+    'changeBytes',
+  );
+  @override
+  late final GeneratedColumn<Uint8List> changeBytes =
+      GeneratedColumn<Uint8List>(
+        'change_bytes',
+        aliasedName,
+        false,
+        type: DriftSqlType.blob,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, changeBytes, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_changes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncChange> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('change_bytes')) {
+      context.handle(
+        _changeBytesMeta,
+        changeBytes.isAcceptableOrUnknown(
+          data['change_bytes']!,
+          _changeBytesMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_changeBytesMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SyncChange map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncChange(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      changeBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}change_bytes'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SyncChangesTable createAlias(String alias) {
+    return $SyncChangesTable(attachedDatabase, alias);
+  }
+}
+
+class SyncChange extends DataClass implements Insertable<SyncChange> {
+  final int id;
+  final Uint8List changeBytes;
+  final DateTime createdAt;
+  const SyncChange({
+    required this.id,
+    required this.changeBytes,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['change_bytes'] = Variable<Uint8List>(changeBytes);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  SyncChangesCompanion toCompanion(bool nullToAbsent) {
+    return SyncChangesCompanion(
+      id: Value(id),
+      changeBytes: Value(changeBytes),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory SyncChange.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncChange(
+      id: serializer.fromJson<int>(json['id']),
+      changeBytes: serializer.fromJson<Uint8List>(json['changeBytes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'changeBytes': serializer.toJson<Uint8List>(changeBytes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  SyncChange copyWith({int? id, Uint8List? changeBytes, DateTime? createdAt}) =>
+      SyncChange(
+        id: id ?? this.id,
+        changeBytes: changeBytes ?? this.changeBytes,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  SyncChange copyWithCompanion(SyncChangesCompanion data) {
+    return SyncChange(
+      id: data.id.present ? data.id.value : this.id,
+      changeBytes: data.changeBytes.present
+          ? data.changeBytes.value
+          : this.changeBytes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncChange(')
+          ..write('id: $id, ')
+          ..write('changeBytes: $changeBytes, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, $driftBlobEquality.hash(changeBytes), createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncChange &&
+          other.id == this.id &&
+          $driftBlobEquality.equals(other.changeBytes, this.changeBytes) &&
+          other.createdAt == this.createdAt);
+}
+
+class SyncChangesCompanion extends UpdateCompanion<SyncChange> {
+  final Value<int> id;
+  final Value<Uint8List> changeBytes;
+  final Value<DateTime> createdAt;
+  const SyncChangesCompanion({
+    this.id = const Value.absent(),
+    this.changeBytes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  SyncChangesCompanion.insert({
+    this.id = const Value.absent(),
+    required Uint8List changeBytes,
+    required DateTime createdAt,
+  }) : changeBytes = Value(changeBytes),
+       createdAt = Value(createdAt);
+  static Insertable<SyncChange> custom({
+    Expression<int>? id,
+    Expression<Uint8List>? changeBytes,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (changeBytes != null) 'change_bytes': changeBytes,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  SyncChangesCompanion copyWith({
+    Value<int>? id,
+    Value<Uint8List>? changeBytes,
+    Value<DateTime>? createdAt,
+  }) {
+    return SyncChangesCompanion(
+      id: id ?? this.id,
+      changeBytes: changeBytes ?? this.changeBytes,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (changeBytes.present) {
+      map['change_bytes'] = Variable<Uint8List>(changeBytes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncChangesCompanion(')
+          ..write('id: $id, ')
+          ..write('changeBytes: $changeBytes, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $ProjectsTable projects = $ProjectsTable(this);
   late final $TasksTable tasks = $TasksTable(this);
+  late final $SyncChangesTable syncChanges = $SyncChangesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [projects, tasks];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+    projects,
+    tasks,
+    syncChanges,
+  ];
 }
 
 typedef $$ProjectsTableCreateCompanionBuilder = ProjectsCompanion Function({
@@ -1519,6 +1782,173 @@ typedef $$TasksTableProcessedTableManager =
       Task,
       PrefetchHooks Function({bool projectId})
     >;
+typedef $$SyncChangesTableCreateCompanionBuilder =
+    SyncChangesCompanion Function({
+      Value<int> id,
+      required Uint8List changeBytes,
+      required DateTime createdAt,
+    });
+typedef $$SyncChangesTableUpdateCompanionBuilder =
+    SyncChangesCompanion Function({
+      Value<int> id,
+      Value<Uint8List> changeBytes,
+      Value<DateTime> createdAt,
+    });
+
+class $$SyncChangesTableFilterComposer
+    extends Composer<_$AppDatabase, $SyncChangesTable> {
+  $$SyncChangesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<Uint8List> get changeBytes => $composableBuilder(
+    column: $table.changeBytes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SyncChangesTableOrderingComposer
+    extends Composer<_$AppDatabase, $SyncChangesTable> {
+  $$SyncChangesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<Uint8List> get changeBytes => $composableBuilder(
+    column: $table.changeBytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SyncChangesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SyncChangesTable> {
+  $$SyncChangesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<Uint8List> get changeBytes => $composableBuilder(
+    column: $table.changeBytes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$SyncChangesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SyncChangesTable,
+          SyncChange,
+          $$SyncChangesTableFilterComposer,
+          $$SyncChangesTableOrderingComposer,
+          $$SyncChangesTableAnnotationComposer,
+          $$SyncChangesTableCreateCompanionBuilder,
+          $$SyncChangesTableUpdateCompanionBuilder,
+          (
+            SyncChange,
+            BaseReferences<_$AppDatabase, $SyncChangesTable, SyncChange>,
+          ),
+          SyncChange,
+          PrefetchHooks Function()
+        > {
+  $$SyncChangesTableTableManager(_$AppDatabase db, $SyncChangesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncChangesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncChangesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SyncChangesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<Uint8List> changeBytes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => SyncChangesCompanion(
+                id: id,
+                changeBytes: changeBytes,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required Uint8List changeBytes,
+                required DateTime createdAt,
+              }) => SyncChangesCompanion.insert(
+                id: id,
+                changeBytes: changeBytes,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$SyncChangesTable, SyncChange>(table),
+                  BaseReferences<_$AppDatabase, $SyncChangesTable, SyncChange>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SyncChangesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SyncChangesTable,
+      SyncChange,
+      $$SyncChangesTableFilterComposer,
+      $$SyncChangesTableOrderingComposer,
+      $$SyncChangesTableAnnotationComposer,
+      $$SyncChangesTableCreateCompanionBuilder,
+      $$SyncChangesTableUpdateCompanionBuilder,
+      (
+        SyncChange,
+        BaseReferences<_$AppDatabase, $SyncChangesTable, SyncChange>,
+      ),
+      SyncChange,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1527,4 +1957,6 @@ class $AppDatabaseManager {
       $$ProjectsTableTableManager(_db, _db.projects);
   $$TasksTableTableManager get tasks =>
       $$TasksTableTableManager(_db, _db.tasks);
+  $$SyncChangesTableTableManager get syncChanges =>
+      $$SyncChangesTableTableManager(_db, _db.syncChanges);
 }
