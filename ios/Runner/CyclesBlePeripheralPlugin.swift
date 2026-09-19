@@ -71,7 +71,7 @@ public class CyclesBlePeripheralPlugin: NSObject, FlutterPlugin, CBPeripheralMan
             peripheralManager?.stopAdvertising()
             peripheralManager?.removeAllServices()
             isAdvertising = false
-            channel?.invokeMethod("onAdvertisingStateChanged", false)
+            channel?.invokeMethod("onAdvertisingStateChanged", arguments: false)
         }
     }
 
@@ -98,7 +98,7 @@ public class CyclesBlePeripheralPlugin: NSObject, FlutterPlugin, CBPeripheralMan
         ]
         manager.startAdvertising(advertisementData)
         isAdvertising = true
-        channel?.invokeMethod("onAdvertisingStateChanged", true)
+        channel?.invokeMethod("onAdvertisingStateChanged", arguments: true)
     }
 
     // MARK: - CBPeripheralManagerDelegate
@@ -120,7 +120,7 @@ public class CyclesBlePeripheralPlugin: NSObject, FlutterPlugin, CBPeripheralMan
         for request in requests {
             if request.characteristic.uuid == Self.characteristicUUID {
                 if let value = request.value {
-                    channel?.invokeMethod("onFrameReceived", ["data": FlutterStandardTypedData(bytes: value)])
+                    channel?.invokeMethod("onFrameReceived", arguments: ["data": FlutterStandardTypedData(bytes: value)])
                 }
                 peripheral.respond(to: request, withResult: .success)
             } else {

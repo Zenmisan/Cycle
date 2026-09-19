@@ -12,7 +12,7 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
-    CyclesBlePeripheralPlugin.register(with: engineBridge.pluginRegistry.registrar(forPlugin: "CyclesBlePeripheralPlugin"))
-    CyclesWidgetPlugin.register(with: engineBridge.pluginRegistry.registrar(forPlugin: "CyclesWidgetPlugin"))
+    CyclesBlePeripheralPlugin.register(with: engineBridge.pluginRegistry.registrar(forPlugin: "CyclesBlePeripheralPlugin")!)
+    CyclesWidgetPlugin.register(with: engineBridge.pluginRegistry.registrar(forPlugin: "CyclesWidgetPlugin")!)
   }
 }
