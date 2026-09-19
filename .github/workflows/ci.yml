@@ -107,7 +107,7 @@ jobs:
           path: cycles-1.0.0-android.apk
 
   build-linux:
-    name: Build Linux Packages (.tar.gz, .deb, .AppImage)
+    name: Build Linux Packages (.tar.gz, .deb, .rpm, .AppImage)
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -128,7 +128,7 @@ jobs:
       - name: Install Linux Build Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libdbus-1-dev pkg-config libclang-dev clang cmake ninja-build libgtk-3-dev wget
+          sudo apt-get install -y libdbus-1-dev pkg-config libclang-dev clang cmake ninja-build libgtk-3-dev wget alien rpm
 
       - name: Build Rust Core
         run: |
@@ -141,7 +141,7 @@ jobs:
           flutter pub get
           flutter build linux --release
 
-      - name: Package Linux .tar.gz and .deb
+      - name: Package Linux .tar.gz, .deb, and .rpm
         run: |
           # 1. Package universal tarball
           tar -czvf cycles-1.0.0-linux.tar.gz -C build/linux/x64/release/bundle .
@@ -175,6 +175,11 @@ jobs:
 
           dpkg-deb --build deb cycles-1.0.0-linux.deb
 
+          # 3. Package RedHat / Fedora / SUSE .rpm
+          sudo alien -r -c --version=1.0.0 cycles-1.0.0-linux.deb
+          find . -maxdepth 1 -name "*cycles*.rpm" -exec mv {} cycles-1.0.0-linux.rpm \;
+          ls -la cycles-1.0.0-linux.rpm
+
       - name: Package Linux .AppImage
         run: |
           mkdir -p AppDir/usr/bin AppDir/usr/lib AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/scalable/apps
@@ -204,18 +209,44 @@ jobs:
           wget -q https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
           chmod +x appimagetool
           ./appimagetool --appimage-extract-and-run AppDir cycles-1.0.0-linux.AppImage
+          ls -la cycles-1.0.0-linux.AppImage
 
-      - name: Upload Linux Artifacts
+      - name: Upload Linux Packages
         uses: actions/upload-artifact@v4
         with:
           name: cycles-linux-packages
           path: |
             cycles-1.0.0-linux.tar.gz
             cycles-1.0.0-linux.deb
+            cycles-1.0.0-linux.rpm
             cycles-1.0.0-linux.AppImage
 
+      - name: Upload Linux .tar.gz
+        uses: actions/upload-artifact@v4
+        with:
+          name: cycles-1.0.0-linux.tar.gz
+          path: cycles-1.0.0-linux.tar.gz
+
+      - name: Upload Linux .deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: cycles-1.0.0-linux.deb
+          path: cycles-1.0.0-linux.deb
+
+      - name: Upload Linux .rpm
+        uses: actions/upload-artifact@v4
+        with:
+          name: cycles-1.0.0-linux.rpm
+          path: cycles-1.0.0-linux.rpm
+
+      - name: Upload Linux .AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: cycles-1.0.0-linux.AppImage
+          path: cycles-1.0.0-linux.AppImage
+
   build-windows:
-    name: Build Windows Installer (.exe)
+    name: Build Windows Packages (.exe, .zip)
     needs: test
     runs-on: windows-latest
     steps:
@@ -243,6 +274,12 @@ jobs:
         run: |
           flutter pub get
           flutter build windows --release
+
+      - name: Package Windows Portable (.zip)
+        shell: pwsh
+        run: |
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath cycles-1.0.0-windows-portable.zip
+          Get-Item cycles-1.0.0-windows-portable.zip
 
       - name: Install Inno Setup
         shell: pwsh
@@ -274,11 +311,25 @@ jobs:
           Set-Content -Path setup.iss -Value $issContent
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" setup.iss
 
-      - name: Upload Windows Installer
+      - name: Upload Windows Packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: cycles-windows-packages
+          path: |
+            cycles-1.0.0-windows.exe
+            cycles-1.0.0-windows-portable.zip
+
+      - name: Upload Windows Installer (.exe)
         uses: actions/upload-artifact@v4
         with:
           name: cycles-1.0.0-windows.exe
           path: cycles-1.0.0-windows.exe
+
+      - name: Upload Windows Portable (.zip)
+        uses: actions/upload-artifact@v4
+        with:
+          name: cycles-1.0.0-windows-portable.zip
+          path: cycles-1.0.0-windows-portable.zip
 
   build-macos:
     name: Build macOS Disk Image (.dmg)
