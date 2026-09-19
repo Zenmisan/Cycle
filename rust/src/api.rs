@@ -340,3 +340,142 @@ pub async fn set_peer_trust(peer_id: String, trusted: bool) -> Result<(), String
     guard.peer_store.set_trusted(&peer_id, trusted);
     Ok(())
 }
+
+// ---------------------------------------------------------------------------
+// LAN mDNS Discovery + TCP Transport FFI (phase 5 fast-path — appended here,
+// clearly separated, to avoid colliding with the BLE section above which
+// wifi_direct_20260919/ble_transport_20260919 also touch).
+// ---------------------------------------------------------------------------
+
+use crate::lan;
+
+/// Port this device listens on when it's the LAN sync Peripheral-equivalent
+/// (lower device_id). Arbitrary but fixed so peers agree without negotiation.
+const CYCLES_LAN_PORT: u16 = 47225;
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct LanPeerInfo {
+    pub device_id: String,
+    pub address: String,
+    pub port: u16,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct LanSyncReport {
+    pub peer_id: String,
+    pub success: bool,
+    pub tasks_updated: usize,
+}
+
+/// Advertises this device on the LAN via mDNS. The returned handle must be
+/// kept alive (held on the Dart side) for as long as advertising should
+/// continue — dropping it stops it.
+pub async fn start_lan_advertising() -> Result<(), String> {
+    let device_id = get_device_id().await;
+    let (daemon, _fullname) = lan::advertise(&device_id, CYCLES_LAN_PORT)?;
+    // Leak intentionally: advertising should live for the app's lifetime,
+    // same as BLE advertising above — no explicit stop path exists yet either.
+    std::mem::forget(daemon);
+    Ok(())
+}
+
+/// Browses for `_cycles._tcp` peers on the LAN for a few seconds.
+pub async fn scan_lan_peers() -> Result<Vec<LanPeerInfo>, String> {
+    let peers = lan::browse_once(std::time::Duration::from_secs(3))?;
+    Ok(peers
+        .into_iter()
+        .map(|p| LanPeerInfo {
+            device_id: p.device_id,
+            address: p.addr.to_string(),
+            port: p.port,
+        })
+        .collect())
+}
+
+/// Runs one LAN sync round with a peer discovered via `scan_lan_peers`,
+/// preferring this fast path over BLE when both devices share a network.
+/// Reuses the exact same `generate_sync_message`/`merge_incoming` seam BLE
+/// uses (see `sync_with_peer_ble` above) — only the transport differs.
+pub async fn sync_with_peer_lan(peer_id: String, address: String) -> Result<LanSyncReport, String> {
+    let local_id = get_device_id().await;
+    let peer_addr: std::net::IpAddr = address.parse().map_err(|e| format!("bad address: {e}"))?;
+
+    let outgoing = generate_sync_message(peer_id.clone())?.unwrap_or_default();
+
+    // `lan::sync_round` is blocking std::net I/O — run it off the async
+    // executor so it can't stall other tasks (e.g. concurrent BLE work).
+    let sync_peer_id = peer_id.clone();
+    let response = tokio::task::spawn_blocking(move || {
+        lan::sync_round(
+            &local_id,
+            &sync_peer_id,
+            peer_addr,
+            CYCLES_LAN_PORT,
+            CYCLES_LAN_PORT,
+            outgoing,
+        )
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+
+    let updated = merge_incoming(peer_id.clone(), response)?;
+
+    Ok(LanSyncReport {
+        peer_id,
+        success: true,
+        tasks_updated: updated.len(),
+    })
+}
+
+// ---------------------------------------------------------------------------
+// Wi-Fi Direct Transport FFI (phase 5 half 2 — Android <-> Windows P2P)
+// ---------------------------------------------------------------------------
+
+use crate::wifi_direct;
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct WifiDirectSyncReport {
+    pub peer_id: String,
+    pub success: bool,
+    pub message: String,
+    pub tasks_updated: usize,
+}
+
+/// Runs one sync round over an established Wi-Fi Direct P2P socket connection.
+/// Once Android WifiP2pManager or Windows WinRT WiFiDirect sets up the P2P group
+/// and yields an IP address, this connects over the dedicated Wi-Fi Direct port (47226)
+/// and feeds directly into the same `generate_sync_message` and `merge_incoming` seam.
+pub async fn sync_with_peer_wifi_direct(
+    peer_id: String,
+    address: String,
+) -> Result<WifiDirectSyncReport, String> {
+    let local_id = get_device_id().await;
+    let peer_addr: std::net::IpAddr = address
+        .parse()
+        .map_err(|e| format!("Invalid Wi-Fi Direct peer address: {e}"))?;
+
+    let outgoing = generate_sync_message(peer_id.clone())?.unwrap_or_default();
+
+    let sync_peer_id = peer_id.clone();
+    let response = tokio::task::spawn_blocking(move || {
+        wifi_direct::sync_round_wifi_direct(
+            &local_id,
+            &sync_peer_id,
+            peer_addr,
+            wifi_direct::CYCLES_WIFI_DIRECT_PORT,
+            wifi_direct::CYCLES_WIFI_DIRECT_PORT,
+            outgoing,
+        )
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+
+    let updated = merge_incoming(peer_id.clone(), response)?;
+
+    Ok(WifiDirectSyncReport {
+        peer_id,
+        success: true,
+        message: "Wi-Fi Direct P2P sync completed successfully".to_string(),
+        tasks_updated: updated.len(),
+    })
+}

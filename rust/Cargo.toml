@@ -17,6 +17,7 @@ tokio = { version = "1.53.1", features = ["full"] }
 uuid = { version = "1.26.1", features = ["v4", "serde"] }
 rusqlite = { version = "0.40.2", features = ["bundled"] }
 thiserror = "2.0.20"
+mdns-sd = "0.21.3"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 bluer = { version = "0.17.4", features = ["bluetoothd", "l2cap"] }

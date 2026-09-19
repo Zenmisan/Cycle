@@ -68,7 +68,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => -972324780;
+  int get rustContentHash => -1156711978;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -108,6 +108,8 @@ abstract class RustLibApi extends BaseApi {
 
   Future<List<BlePeer>> crateApiScanBlePeers();
 
+  Future<List<LanPeerInfo>> crateApiScanLanPeers();
+
   Future<void> crateApiSetPeerTrust({
     required String peerId,
     required bool trusted,
@@ -115,9 +117,21 @@ abstract class RustLibApi extends BaseApi {
 
   Future<String> crateApiStartBleAdvertising();
 
+  Future<void> crateApiStartLanAdvertising();
+
   Future<void> crateApiStopBleAdvertising();
 
   Future<BleSyncReport> crateApiSyncWithPeerBle({
+    required String peerId,
+    required String address,
+  });
+
+  Future<LanSyncReport> crateApiSyncWithPeerLan({
+    required String peerId,
+    required String address,
+  });
+
+  Future<WifiDirectSyncReport> crateApiSyncWithPeerWifiDirect({
     required String peerId,
     required String address,
   });
@@ -451,6 +465,33 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "scan_ble_peers", argNames: []);
 
   @override
+  Future<List<LanPeerInfo>> crateApiScanLanPeers() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 12,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_lan_peer_info,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiScanLanPeersConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiScanLanPeersConstMeta =>
+      const TaskConstMeta(debugName: "scan_lan_peers", argNames: []);
+
+  @override
   Future<void> crateApiSetPeerTrust({
     required String peerId,
     required bool trusted,
@@ -464,7 +505,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 12,
+            funcId: 13,
             port: port_,
           );
         },
@@ -493,7 +534,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 13,
+            funcId: 14,
             port: port_,
           );
         },
@@ -512,6 +553,33 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "start_ble_advertising", argNames: []);
 
   @override
+  Future<void> crateApiStartLanAdvertising() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 15,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiStartLanAdvertisingConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiStartLanAdvertisingConstMeta =>
+      const TaskConstMeta(debugName: "start_lan_advertising", argNames: []);
+
+  @override
   Future<void> crateApiStopBleAdvertising() {
     return handler.executeNormal(
       NormalTask(
@@ -520,7 +588,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 14,
+            funcId: 16,
             port: port_,
           );
         },
@@ -552,7 +620,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 15,
+            funcId: 17,
             port: port_,
           );
         },
@@ -571,6 +639,75 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     debugName: "sync_with_peer_ble",
     argNames: ["peerId", "address"],
   );
+
+  @override
+  Future<LanSyncReport> crateApiSyncWithPeerLan({
+    required String peerId,
+    required String address,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(peerId, serializer);
+          sse_encode_String(address, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 18,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_lan_sync_report,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiSyncWithPeerLanConstMeta,
+        argValues: [peerId, address],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSyncWithPeerLanConstMeta => const TaskConstMeta(
+    debugName: "sync_with_peer_lan",
+    argNames: ["peerId", "address"],
+  );
+
+  @override
+  Future<WifiDirectSyncReport> crateApiSyncWithPeerWifiDirect({
+    required String peerId,
+    required String address,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(peerId, serializer);
+          sse_encode_String(address, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 19,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_wifi_direct_sync_report,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiSyncWithPeerWifiDirectConstMeta,
+        argValues: [peerId, address],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSyncWithPeerWifiDirectConstMeta =>
+      const TaskConstMeta(
+        debugName: "sync_with_peer_wifi_direct",
+        argNames: ["peerId", "address"],
+      );
 
   @protected
   String dco_decode_String(dynamic raw) {
@@ -657,6 +794,32 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  LanPeerInfo dco_decode_lan_peer_info(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return LanPeerInfo(
+      deviceId: dco_decode_String(arr[0]),
+      address: dco_decode_String(arr[1]),
+      port: dco_decode_u_16(arr[2]),
+    );
+  }
+
+  @protected
+  LanSyncReport dco_decode_lan_sync_report(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return LanSyncReport(
+      peerId: dco_decode_String(arr[0]),
+      success: dco_decode_bool(arr[1]),
+      tasksUpdated: dco_decode_usize(arr[2]),
+    );
+  }
+
+  @protected
   List<String> dco_decode_list_String(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_String).toList();
@@ -672,6 +835,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   List<BlePeerIdentity> dco_decode_list_ble_peer_identity(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return (raw as List<dynamic>).map(dco_decode_ble_peer_identity).toList();
+  }
+
+  @protected
+  List<LanPeerInfo> dco_decode_list_lan_peer_info(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_lan_peer_info).toList();
   }
 
   @protected
@@ -731,6 +900,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  int dco_decode_u_16(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as int;
+  }
+
+  @protected
   BigInt dco_decode_u_64(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dcoDecodeU64(raw);
@@ -752,6 +927,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   BigInt dco_decode_usize(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dcoDecodeU64(raw);
+  }
+
+  @protected
+  WifiDirectSyncReport dco_decode_wifi_direct_sync_report(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 4)
+      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    return WifiDirectSyncReport(
+      peerId: dco_decode_String(arr[0]),
+      success: dco_decode_bool(arr[1]),
+      message: dco_decode_String(arr[2]),
+      tasksUpdated: dco_decode_usize(arr[3]),
+    );
   }
 
   @protected
@@ -843,6 +1032,32 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  LanPeerInfo sse_decode_lan_peer_info(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_deviceId = sse_decode_String(deserializer);
+    var var_address = sse_decode_String(deserializer);
+    var var_port = sse_decode_u_16(deserializer);
+    return LanPeerInfo(
+      deviceId: var_deviceId,
+      address: var_address,
+      port: var_port,
+    );
+  }
+
+  @protected
+  LanSyncReport sse_decode_lan_sync_report(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_peerId = sse_decode_String(deserializer);
+    var var_success = sse_decode_bool(deserializer);
+    var var_tasksUpdated = sse_decode_usize(deserializer);
+    return LanSyncReport(
+      peerId: var_peerId,
+      success: var_success,
+      tasksUpdated: var_tasksUpdated,
+    );
+  }
+
+  @protected
   List<String> sse_decode_list_String(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
 
@@ -876,6 +1091,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var ans_ = <BlePeerIdentity>[];
     for (var idx_ = 0; idx_ < len_; ++idx_) {
       ans_.add(sse_decode_ble_peer_identity(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<LanPeerInfo> sse_decode_list_lan_peer_info(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <LanPeerInfo>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_lan_peer_info(deserializer));
     }
     return ans_;
   }
@@ -967,6 +1196,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  int sse_decode_u_16(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getUint16();
+  }
+
+  @protected
   BigInt sse_decode_u_64(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getBigUint64();
@@ -987,6 +1222,23 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   BigInt sse_decode_usize(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getBigUint64();
+  }
+
+  @protected
+  WifiDirectSyncReport sse_decode_wifi_direct_sync_report(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_peerId = sse_decode_String(deserializer);
+    var var_success = sse_decode_bool(deserializer);
+    var var_message = sse_decode_String(deserializer);
+    var var_tasksUpdated = sse_decode_usize(deserializer);
+    return WifiDirectSyncReport(
+      peerId: var_peerId,
+      success: var_success,
+      message: var_message,
+      tasksUpdated: var_tasksUpdated,
+    );
   }
 
   @protected
@@ -1077,6 +1329,25 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_lan_peer_info(LanPeerInfo self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.deviceId, serializer);
+    sse_encode_String(self.address, serializer);
+    sse_encode_u_16(self.port, serializer);
+  }
+
+  @protected
+  void sse_encode_lan_sync_report(
+    LanSyncReport self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.peerId, serializer);
+    sse_encode_bool(self.success, serializer);
+    sse_encode_usize(self.tasksUpdated, serializer);
+  }
+
+  @protected
   void sse_encode_list_String(List<String> self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
@@ -1103,6 +1374,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_i_32(self.length, serializer);
     for (final item in self) {
       sse_encode_ble_peer_identity(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_lan_peer_info(
+    List<LanPeerInfo> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_lan_peer_info(item, serializer);
     }
   }
 
@@ -1192,6 +1475,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_u_16(int self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putUint16(self);
+  }
+
+  @protected
   void sse_encode_u_64(BigInt self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putBigUint64(self);
@@ -1212,6 +1501,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_usize(BigInt self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putBigUint64(self);
+  }
+
+  @protected
+  void sse_encode_wifi_direct_sync_report(
+    WifiDirectSyncReport self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.peerId, serializer);
+    sse_encode_bool(self.success, serializer);
+    sse_encode_String(self.message, serializer);
+    sse_encode_usize(self.tasksUpdated, serializer);
   }
 
   @protected

@@ -3,6 +3,8 @@ pub mod api;
 pub mod crdt;
 pub mod store;
 pub mod ble;
+pub mod lan;
+pub mod wifi_direct;
 
 #[cfg(test)]
 mod tests {

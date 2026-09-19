@@ -10,7 +10,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These functions are ignored because they are not marked as `pub`: `get_ble_state`, `state`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `BleState`, `CrdtState`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
 
 Future<String> ping({required String name}) =>
     RustLib.instance.api.crateApiPing(name: name);
@@ -90,6 +90,40 @@ Future<List<BlePeerIdentity>> getTrustedPeers() =>
 /// Updates peer trust status.
 Future<void> setPeerTrust({required String peerId, required bool trusted}) =>
     RustLib.instance.api.crateApiSetPeerTrust(peerId: peerId, trusted: trusted);
+
+/// Advertises this device on the LAN via mDNS. The returned handle must be
+/// kept alive (held on the Dart side) for as long as advertising should
+/// continue — dropping it stops it.
+Future<void> startLanAdvertising() =>
+    RustLib.instance.api.crateApiStartLanAdvertising();
+
+/// Browses for `_cycles._tcp` peers on the LAN for a few seconds.
+Future<List<LanPeerInfo>> scanLanPeers() =>
+    RustLib.instance.api.crateApiScanLanPeers();
+
+/// Runs one LAN sync round with a peer discovered via `scan_lan_peers`,
+/// preferring this fast path over BLE when both devices share a network.
+/// Reuses the exact same `generate_sync_message`/`merge_incoming` seam BLE
+/// uses (see `sync_with_peer_ble` above) — only the transport differs.
+Future<LanSyncReport> syncWithPeerLan({
+  required String peerId,
+  required String address,
+}) => RustLib.instance.api.crateApiSyncWithPeerLan(
+  peerId: peerId,
+  address: address,
+);
+
+/// Runs one sync round over an established Wi-Fi Direct P2P socket connection.
+/// Once Android WifiP2pManager or Windows WinRT WiFiDirect sets up the P2P group
+/// and yields an IP address, this connects over the dedicated Wi-Fi Direct port (47226)
+/// and feeds directly into the same `generate_sync_message` and `merge_incoming` seam.
+Future<WifiDirectSyncReport> syncWithPeerWifiDirect({
+  required String peerId,
+  required String address,
+}) => RustLib.instance.api.crateApiSyncWithPeerWifiDirect(
+  peerId: peerId,
+  address: address,
+);
 
 class BlePeer {
   final String deviceId;
@@ -177,6 +211,86 @@ class BleSyncReport {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is BleSyncReport &&
+          runtimeType == other.runtimeType &&
+          peerId == other.peerId &&
+          success == other.success &&
+          message == other.message &&
+          tasksUpdated == other.tasksUpdated;
+}
+
+class LanPeerInfo {
+  final String deviceId;
+  final String address;
+  final int port;
+
+  const LanPeerInfo({
+    required this.deviceId,
+    required this.address,
+    required this.port,
+  });
+
+  @override
+  int get hashCode => deviceId.hashCode ^ address.hashCode ^ port.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is LanPeerInfo &&
+          runtimeType == other.runtimeType &&
+          deviceId == other.deviceId &&
+          address == other.address &&
+          port == other.port;
+}
+
+class LanSyncReport {
+  final String peerId;
+  final bool success;
+  final BigInt tasksUpdated;
+
+  const LanSyncReport({
+    required this.peerId,
+    required this.success,
+    required this.tasksUpdated,
+  });
+
+  @override
+  int get hashCode =>
+      peerId.hashCode ^ success.hashCode ^ tasksUpdated.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is LanSyncReport &&
+          runtimeType == other.runtimeType &&
+          peerId == other.peerId &&
+          success == other.success &&
+          tasksUpdated == other.tasksUpdated;
+}
+
+class WifiDirectSyncReport {
+  final String peerId;
+  final bool success;
+  final String message;
+  final BigInt tasksUpdated;
+
+  const WifiDirectSyncReport({
+    required this.peerId,
+    required this.success,
+    required this.message,
+    required this.tasksUpdated,
+  });
+
+  @override
+  int get hashCode =>
+      peerId.hashCode ^
+      success.hashCode ^
+      message.hashCode ^
+      tasksUpdated.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is WifiDirectSyncReport &&
           runtimeType == other.runtimeType &&
           peerId == other.peerId &&
           success == other.success &&

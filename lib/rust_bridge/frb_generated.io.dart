@@ -53,6 +53,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PlatformInt64 dco_decode_i_64(dynamic raw);
 
   @protected
+  LanPeerInfo dco_decode_lan_peer_info(dynamic raw);
+
+  @protected
+  LanSyncReport dco_decode_lan_sync_report(dynamic raw);
+
+  @protected
   List<String> dco_decode_list_String(dynamic raw);
 
   @protected
@@ -60,6 +66,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   List<BlePeerIdentity> dco_decode_list_ble_peer_identity(dynamic raw);
+
+  @protected
+  List<LanPeerInfo> dco_decode_list_lan_peer_info(dynamic raw);
 
   @protected
   List<int> dco_decode_list_prim_u_8_loose(dynamic raw);
@@ -83,6 +92,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   TaskRecord dco_decode_task_record(dynamic raw);
 
   @protected
+  int dco_decode_u_16(dynamic raw);
+
+  @protected
   BigInt dco_decode_u_64(dynamic raw);
 
   @protected
@@ -93,6 +105,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   BigInt dco_decode_usize(dynamic raw);
+
+  @protected
+  WifiDirectSyncReport dco_decode_wifi_direct_sync_report(dynamic raw);
 
   @protected
   String sse_decode_String(SseDeserializer deserializer);
@@ -125,6 +140,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   PlatformInt64 sse_decode_i_64(SseDeserializer deserializer);
 
   @protected
+  LanPeerInfo sse_decode_lan_peer_info(SseDeserializer deserializer);
+
+  @protected
+  LanSyncReport sse_decode_lan_sync_report(SseDeserializer deserializer);
+
+  @protected
   List<String> sse_decode_list_String(SseDeserializer deserializer);
 
   @protected
@@ -134,6 +155,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<BlePeerIdentity> sse_decode_list_ble_peer_identity(
     SseDeserializer deserializer,
   );
+
+  @protected
+  List<LanPeerInfo> sse_decode_list_lan_peer_info(SseDeserializer deserializer);
 
   @protected
   List<int> sse_decode_list_prim_u_8_loose(SseDeserializer deserializer);
@@ -157,6 +181,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   TaskRecord sse_decode_task_record(SseDeserializer deserializer);
 
   @protected
+  int sse_decode_u_16(SseDeserializer deserializer);
+
+  @protected
   BigInt sse_decode_u_64(SseDeserializer deserializer);
 
   @protected
@@ -167,6 +194,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   BigInt sse_decode_usize(SseDeserializer deserializer);
+
+  @protected
+  WifiDirectSyncReport sse_decode_wifi_direct_sync_report(
+    SseDeserializer deserializer,
+  );
 
   @protected
   int sse_decode_i_32(SseDeserializer deserializer);
@@ -211,6 +243,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_i_64(PlatformInt64 self, SseSerializer serializer);
 
   @protected
+  void sse_encode_lan_peer_info(LanPeerInfo self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_lan_sync_report(LanSyncReport self, SseSerializer serializer);
+
+  @protected
   void sse_encode_list_String(List<String> self, SseSerializer serializer);
 
   @protected
@@ -219,6 +257,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_list_ble_peer_identity(
     List<BlePeerIdentity> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_lan_peer_info(
+    List<LanPeerInfo> self,
     SseSerializer serializer,
   );
 
@@ -256,6 +300,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_task_record(TaskRecord self, SseSerializer serializer);
 
   @protected
+  void sse_encode_u_16(int self, SseSerializer serializer);
+
+  @protected
   void sse_encode_u_64(BigInt self, SseSerializer serializer);
 
   @protected
@@ -266,6 +313,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_usize(BigInt self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_wifi_direct_sync_report(
+    WifiDirectSyncReport self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_i_32(int self, SseSerializer serializer);

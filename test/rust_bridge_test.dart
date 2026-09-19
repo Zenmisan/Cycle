@@ -46,4 +46,14 @@ void main() {
     final updatedPeer = updatedPeers.firstWhere((p) => p.deviceId == 'peer0001');
     expect(updatedPeer.trusted, isFalse);
   });
+
+  test('Wi-Fi Direct FFI invalid address validation', () async {
+    expect(
+      () => rust.syncWithPeerWifiDirect(
+        peerId: 'peer0002',
+        address: 'not-an-ip',
+      ),
+      throwsA(contains('Invalid Wi-Fi Direct peer address')),
+    );
+  });
 }
