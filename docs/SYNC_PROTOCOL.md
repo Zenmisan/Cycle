@@ -10,7 +10,7 @@ This document defines the wire format, state machine, and communication protocol
 
 | Parameter | Value | Description |
 |---|---|---|
-| **Service UUID** | `0000fd01-0000-1000-8000-00805f9b34fb` | 16-bit alias `0xFD01` — Cycles Sync GATT Service |
+| **Service UUID** | `0000fd01-0000-1000-8000-00805f9b34fb` | 16-bit alias `0xFD01` - Cycles Sync GATT Service |
 | **Sync Characteristic UUID** | `0000fd02-0000-1000-8000-00805f9b34fb` | Write Without Response / Read / Notify |
 | **Advertising Name Prefix** | `Cycles-` | Prefix followed by 8-character hex device ID |
 | **Frame Header Size** | 10 bytes | 2B `MsgId` + 2B `Seq` + 2B `TotalChunks` + 4B `CRC32` |

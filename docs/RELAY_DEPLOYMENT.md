@@ -1,4 +1,4 @@
-# Cycles — Relay Server Deployment Guide
+# Cycles: Relay Server Deployment Guide
 
 The Cycles Relay Server is an optional, lightweight, self-hosted Go service designed to facilitate synchronization when devices are separated by distance and cannot connect via Wi-Fi Direct, Local LAN, or BLE.
 

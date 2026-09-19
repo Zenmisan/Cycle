@@ -1,4 +1,4 @@
-# Cycles — Data Import & Migration Guide
+# Cycles: Data Import & Migration Guide
 
 Cycles makes it seamless to migrate your projects, tasks, notes, tags, and priorities from existing task management tools. Because Cycles is completely local-first and account-free, your imported data remains strictly on your device.
 

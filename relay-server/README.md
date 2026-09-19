@@ -1,10 +1,10 @@
 # Cycles Relay Server
 
-Standalone, zero-knowledge WebSocket relay server for **Cycles** (Phase 6 Out-of-Proximity Transport).
+Standalone, zero-knowledge WebSocket relay server for **Cycles** (Out-of-Proximity Transport).
 
 ---
 
-## 🎯 Architectural Philosophy: The Dumb Pipe
+## Architectural Philosophy: The Dumb Pipe
 
 Per [PLAN.md](file:///home/zenmi/Projects/Cycle/PLAN.md), the Cycles relay server is intentionally **dumb**:
 
@@ -15,7 +15,7 @@ Per [PLAN.md](file:///home/zenmi/Projects/Cycle/PLAN.md), the Cycles relay serve
 
 ---
 
-## 🔌 Wire Protocol
+## Wire Protocol
 
 ### 1. Connecting & Authentication
 
@@ -81,7 +81,7 @@ For low-overhead binary frames, the relay accepts raw binary frames:
 
 ---
 
-## 🚀 Building & Running
+## Building & Running
 
 ### Prerequisites
 - Go 1.22+ (tested with Go 1.27)
@@ -117,7 +117,7 @@ Response:
 
 ---
 
-## 🐳 Docker Deployment
+## Docker Deployment
 
 A lightweight Dockerfile is included:
 
@@ -129,7 +129,7 @@ docker run -d -p 8080:8080 -e RELAY_AUTH_TOKEN="secret" cycles-relay
 
 ---
 
-## 🧪 Testing
+## Testing
 
 Run the full automated test suite (covers authentication, routing, deferred identification, offline peer handling, binary frames, and clean disconnects):
 

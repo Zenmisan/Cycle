@@ -1,4 +1,4 @@
-# Cycles — System Architecture
+# Cycles: System Architecture
 
 This document details the architectural principles, data flow, subsystem designs, and platform integrations powering **Cycles**.
 

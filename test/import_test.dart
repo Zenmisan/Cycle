@@ -15,7 +15,7 @@ void main() {
         {
           'id': 1,
           'project_id': 101,
-          'title': 'Ship Phase 7',
+          'title': 'Ship v1.0.0',
           'description': 'Finish platform polish and import',
           'done': false,
           'priority': 5, // High
@@ -49,7 +49,7 @@ void main() {
 
       // Task 1
       final t1 = result.tasks[0];
-      expect(t1.title, 'Ship Phase 7');
+      expect(t1.title, 'Ship v1.0.0');
       expect(t1.notes, 'Finish platform polish and import');
       expect(t1.projectIndex, 0);
       expect(t1.status, 'open');

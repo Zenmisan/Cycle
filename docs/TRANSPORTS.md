@@ -1,4 +1,4 @@
-# Cycles — Multi-Tier Transport Architecture
+# Cycles: Multi-Tier Transport Architecture
 
 Cycles is built on a resilient, multi-tier transport cascade. It prioritizes the highest-bandwidth, lowest-friction local peer-to-peer connection available, transparently falling back to proximity BLE or an optional zero-knowledge relay when devices are out of range.
 

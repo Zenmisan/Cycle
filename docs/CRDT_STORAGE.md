@@ -1,4 +1,4 @@
-# Cycles — Single-Store CRDT & Storage Architecture
+# Cycles: Single-Store CRDT & Storage Architecture
 
 Cycles achieves sub-millisecond reactive UI updates alongside deterministic, multi-peer conflict resolution through its **Single-Store Architecture**: a unified model where standard relational SQLite tables and Automerge binary change vectors co-exist within the same local database file (`cycles.sqlite`).
 

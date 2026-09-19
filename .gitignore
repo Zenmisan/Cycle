@@ -81,3 +81,6 @@ relay-server/cycles-relay
 *.bak
 *.tmp
 
+# Downloaded CI build artifacts (local only)
+/Releases/
+

@@ -39,7 +39,7 @@ func main() {
 
 	go func() {
 		log.Printf("==========================================================")
-		log.Printf(" Cycles Relay Server (Phase 6 Out-of-Proximity Transport)")
+		log.Printf(" Cycles Relay Server (Out-of-Proximity Transport)")
 		log.Printf(" Listening on :%s", port)
 		if authToken != "" {
 			log.Printf(" Authentication: Enabled (Shared Secret)")

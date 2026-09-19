@@ -1,4 +1,4 @@
-# Cycles — Cross-Platform Setup & Build Guide
+# Cycles: Cross-Platform Setup & Build Guide
 
 Cycles targets **Android**, **Linux**, **iOS**, and **Windows**. This document details the platform-specific dependencies, native bridges, build pipelines, and permission requirements for each operating system.
 
