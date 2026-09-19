@@ -50,3 +50,7 @@ app.*.map.json
 # Ralph's method tracks + planning doc (local only, not shipped)
 .agents/
 PLAN.md
+
+# Rust build artifacts (rebuilt by scripts/build_android_rust.sh / cargo build)
+/rust/target/
+/android/app/src/main/jniLibs/
