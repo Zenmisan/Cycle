@@ -1,10 +1,12 @@
-name: CI & Multi-Platform Builds
+name: CI & Multi-Platform Release Builds
 
 on:
   push:
     branches: [ main ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   test:
@@ -96,15 +98,16 @@ jobs:
         run: |
           flutter pub get
           flutter build apk --release
+          cp build/app/outputs/flutter-apk/app-release.apk cycles-1.0.0-android.apk
 
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
-          name: cycles-android-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: cycles-1.0.0-android.apk
+          path: cycles-1.0.0-android.apk
 
   build-linux:
-    name: Build Linux (.tar.gz & .deb)
+    name: Build Linux Packages (.tar.gz, .deb, .AppImage)
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -125,7 +128,7 @@ jobs:
       - name: Install Linux Build Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libdbus-1-dev pkg-config libclang-dev clang cmake ninja-build libgtk-3-dev
+          sudo apt-get install -y libdbus-1-dev pkg-config libclang-dev clang cmake ninja-build libgtk-3-dev wget
 
       - name: Build Rust Core
         run: |
@@ -140,10 +143,10 @@ jobs:
 
       - name: Package Linux .tar.gz and .deb
         run: |
-          # Package universal tarball
-          tar -czvf cycles-linux-x64.tar.gz -C build/linux/x64/release/bundle .
+          # 1. Package universal tarball
+          tar -czvf cycles-1.0.0-linux.tar.gz -C build/linux/x64/release/bundle .
 
-          # Package Debian / Ubuntu .deb
+          # 2. Package Debian / Ubuntu .deb
           mkdir -p deb/DEBIAN deb/usr/bin deb/usr/share/cycles deb/usr/share/applications deb/usr/share/icons/hicolor/scalable/apps
           cp -r build/linux/x64/release/bundle/* deb/usr/share/cycles/
           ln -s /usr/share/cycles/cycles deb/usr/bin/cycles
@@ -170,18 +173,49 @@ jobs:
           Categories=Utility;ProjectManagement;
           EOF
 
-          dpkg-deb --build deb cycles-linux-amd64.deb
+          dpkg-deb --build deb cycles-1.0.0-linux.deb
+
+      - name: Package Linux .AppImage
+        run: |
+          mkdir -p AppDir/usr/bin AppDir/usr/lib AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/scalable/apps
+          cp -r build/linux/x64/release/bundle/* AppDir/usr/bin/
+          cp assets/icon/cycle.svg AppDir/cycles.svg
+          cp assets/icon/cycle.svg AppDir/usr/share/icons/hicolor/scalable/apps/cycles.svg
+
+          cat << 'EOF' > AppDir/AppRun
+          #!/bin/sh
+          SELF=$(readlink -f "$0")
+          HERE=${SELF%/*}
+          export PATH="${HERE}/usr/bin:${PATH}"
+          export LD_LIBRARY_PATH="${HERE}/usr/lib:${HERE}/usr/bin/lib:${LD_LIBRARY_PATH}"
+          exec "${HERE}/usr/bin/cycles" "$@"
+          EOF
+          chmod +x AppDir/AppRun
+
+          cat << 'EOF' > AppDir/cycles.desktop
+          [Desktop Entry]
+          Name=Cycles
+          Exec=cycles
+          Icon=cycles
+          Type=Application
+          Categories=Utility;ProjectManagement;
+          EOF
+
+          wget -q https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
+          chmod +x appimagetool
+          ./appimagetool --appimage-extract-and-run AppDir cycles-1.0.0-linux.AppImage
 
       - name: Upload Linux Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: cycles-linux-x64
+          name: cycles-linux-packages
           path: |
-            cycles-linux-x64.tar.gz
-            cycles-linux-amd64.deb
+            cycles-1.0.0-linux.tar.gz
+            cycles-1.0.0-linux.deb
+            cycles-1.0.0-linux.AppImage
 
   build-windows:
-    name: Build Windows Desktop (.exe / .zip)
+    name: Build Windows Installer (.exe)
     needs: test
     runs-on: windows-latest
     steps:
@@ -210,19 +244,44 @@ jobs:
           flutter pub get
           flutter build windows --release
 
-      - name: Package Windows Zip
+      - name: Install Inno Setup
         shell: pwsh
         run: |
-          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath Cycles-windows-x64.zip
+          choco install innosetup -y --no-progress
 
-      - name: Upload Windows Bundle
+      - name: Compile Windows Installer (.exe)
+        shell: pwsh
+        run: |
+          $issContent = @"
+          [Setup]
+          AppName=Cycles
+          AppVersion=1.0.0
+          DefaultDirName={autopf}\Cycles
+          DefaultGroupName=Cycles
+          OutputDir=.
+          OutputBaseFilename=cycles-1.0.0-windows
+          Compression=lzma2
+          SolidCompression=yes
+          ArchitecturesInstallIn64BitMode=x64
+
+          [Files]
+          Source: "build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
+
+          [Icons]
+          Name: "{group}\Cycles"; Filename: "{app}\cycles.exe"
+          Name: "{autodesktop}\Cycles"; Filename: "{app}\cycles.exe"
+          "@
+          Set-Content -Path setup.iss -Value $issContent
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" setup.iss
+
+      - name: Upload Windows Installer
         uses: actions/upload-artifact@v4
         with:
-          name: cycles-windows-x64
-          path: Cycles-windows-x64.zip
+          name: cycles-1.0.0-windows.exe
+          path: cycles-1.0.0-windows.exe
 
   build-macos:
-    name: Build macOS Desktop App
+    name: Build macOS Disk Image (.dmg)
     needs: test
     runs-on: macos-latest
     steps:
@@ -249,14 +308,45 @@ jobs:
           flutter pub get
           flutter build macos --release
 
-      - name: Package macOS App
+      - name: Create macOS Disk Image (.dmg)
         run: |
-          cd build/macos/Build/Products/Release
-          zip -r Cycles-macOS.zip Cycles.app
-          cd -
+          hdiutil create -volname "Cycles" \
+            -srcfolder build/macos/Build/Products/Release/Cycles.app \
+            -ov -format UDZO cycles-1.0.0-macos.dmg
 
-      - name: Upload macOS App Artifact
+      - name: Upload macOS Disk Image
         uses: actions/upload-artifact@v4
         with:
-          name: cycles-macos-app
-          path: build/macos/Build/Products/Release/Cycles-macOS.zip
+          name: cycles-1.0.0-macos.dmg
+          path: cycles-1.0.0-macos.dmg
+
+  build-ios:
+    name: Build iOS Archive (.ipa)
+    needs: test
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Build iOS App (Unsigned)
+        run: |
+          flutter pub get
+          flutter build ios --release --no-codesign
+
+      - name: Package iOS .ipa
+        run: |
+          mkdir -p Payload
+          cp -r build/ios/iphoneos/Runner.app Payload/
+          zip -r cycles-1.0.0-ios-unsigned.ipa Payload
+
+      - name: Upload iOS Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: cycles-1.0.0-ios-unsigned.ipa
+          path: cycles-1.0.0-ios-unsigned.ipa
