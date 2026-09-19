@@ -1,0 +1,11 @@
+[package]
+name = "ble_research"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+bluer = { version = "0.17.4", features = ["bluetoothd", "l2cap"] }
+btleplug = "0.13.1"
+futures = "0.3.34"
+tokio = { version = "1.53.1", features = ["full"] }
+uuid = "1.26.1"
