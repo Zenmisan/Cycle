@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../data/database.dart';
 import '../rust_bridge/api.dart' as rust;
 import '../rust_bridge/crdt.dart' as rust show TaskRecord;
+import 'ble_permission_service.dart';
 
 /// High-level service coordinating BLE device discovery, presence advertising,
 /// trust-on-first-use pairing, and CRDT synchronization with nearby peers.
@@ -42,6 +43,12 @@ class BleSyncService extends ChangeNotifier {
         _isAdvertising = false;
         _statusMessage = 'Presence advertising stopped';
       } else {
+        final permitted = await BlePermissionService.instance.ensureBlePermissions();
+        if (!permitted) {
+          _statusMessage = 'Bluetooth permission required for presence advertising';
+          notifyListeners();
+          return;
+        }
         final res = await rust.startBleAdvertising();
         _isAdvertising = true;
         _statusMessage = res;
@@ -55,6 +62,14 @@ class BleSyncService extends ChangeNotifier {
   /// Scans for nearby Cycles peers over BLE.
   Future<void> scan() async {
     if (_isScanning) return;
+
+    final permitted = await BlePermissionService.instance.ensureBlePermissions();
+    if (!permitted) {
+      _statusMessage = 'Bluetooth permission required for peer scanning';
+      notifyListeners();
+      return;
+    }
+
     _isScanning = true;
     _statusMessage = 'Scanning for nearby peers...';
     notifyListeners();

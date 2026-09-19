@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import 'data/database.dart';
@@ -8,8 +9,11 @@ import 'data/sync_bridge.dart';
 import 'rust_bridge/api.dart' as rust;
 import 'rust_bridge/frb_generated.dart';
 import 'services/ble_sync_service.dart';
+import 'services/notification_service.dart';
+import 'ui/import_screen.dart';
 import 'ui/peers_screen.dart';
 import 'ui/relay_settings_screen.dart';
+import 'ui/task_detail_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,6 +22,7 @@ void main() async {
   await RustLib.init();
   final db = AppDatabase();
   await initCrdtCore(db);
+  await NotificationService.init();
   runApp(CyclesApp(db: db));
 }
 
@@ -92,6 +97,15 @@ class ProjectListScreen extends StatelessWidget {
               ));
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.download_outlined),
+            tooltip: 'Import tasks',
+            onPressed: () {
+              Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => ImportScreen(db: db),
+              ));
+            },
+          ),
         ],
       ),
       body: StreamBuilder<List<Project>>(
@@ -157,43 +171,17 @@ class TaskListScreen extends StatelessWidget {
     await db.upsertTask(companion);
     final row = await (db.select(db.tasks)..where((t) => t.id.equals(id))).getSingle();
     await applyLocalTaskEdit(row);
+    await NotificationService.scheduleForTask(row);
   }
 
-  Future<void> _addTask(BuildContext context) async {
-    final title = await _promptText(context, title: 'New task');
-    if (title == null || title.trim().isEmpty) return;
-    final now = DateTime.now();
-    final id = const Uuid().v4();
-    await _upsertAndSync(
-      TasksCompanion.insert(
-        id: id,
+  void _openTaskDetail(BuildContext context, {Task? existing}) {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => TaskDetailScreen(
+        db: db,
         projectId: project.id,
-        title: title.trim(),
-        createdAt: now,
-        updatedAt: now,
+        existing: existing,
       ),
-      id,
-    );
-  }
-
-  Future<void> _editTask(BuildContext context, Task task) async {
-    final title = await _promptText(context, title: 'Edit task', initial: task.title);
-    if (title == null || title.trim().isEmpty) return;
-    await _upsertAndSync(
-      TasksCompanion(
-        id: Value(task.id),
-        projectId: Value(task.projectId),
-        title: Value(title.trim()),
-        notes: Value(task.notes),
-        due: Value(task.due),
-        tags: Value(task.tags),
-        status: Value(task.status),
-        priority: Value(task.priority),
-        createdAt: Value(task.createdAt),
-        updatedAt: Value(DateTime.now()),
-      ),
-      task.id,
-    );
+    ));
   }
 
   @override
@@ -237,8 +225,16 @@ class TaskListScreen extends StatelessWidget {
                   t.title,
                   style: done ? const TextStyle(decoration: TextDecoration.lineThrough) : null,
                 ),
-                onTap: () => _editTask(context, t),
+                subtitle: (t.due != null || t.priority > 0)
+                    ? Text([
+                        if (t.due != null)
+                          DateFormat('MMM d, HH:mm').format(t.due!),
+                        if (t.priority > 0) kPriorityLabels[t.priority],
+                      ].join(' · '))
+                    : null,
+                onTap: () => _openTaskDetail(context, existing: t),
                 onLongPress: () async {
+                  await NotificationService.cancelForTask(t.id);
                   await db.deleteTask(t.id);
                 },
               );
@@ -247,7 +243,7 @@ class TaskListScreen extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _addTask(context),
+        onPressed: () => _openTaskDetail(context),
         child: const Icon(Icons.add),
       ),
     );

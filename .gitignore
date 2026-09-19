@@ -40,6 +40,9 @@ app.*.symbols
 app.*.map.json
 
 # Android Studio will place build artifacts here
+/android/build/
+/android/app/build/
+.gradle/
 /android/app/debug
 /android/app/profile
 /android/app/release
@@ -50,6 +53,7 @@ app.*.map.json
 # Ralph's method tracks + planning doc (local only, not shipped)
 .agents/
 PLAN.md
+design-system/
 
 # Rust and Go build artifacts
 **/target/

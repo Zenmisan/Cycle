@@ -97,12 +97,21 @@ Ensure there are no lint or type warnings:
 flutter analyze
 ```
 
-### 3. Run Flutter Widget & Bridge Tests
+### 3. Run Flutter Widget, Bridge & Import Tests
+Runs the complete Flutter test suite (15 tests covering UI, FFI bridge, Wi-Fi Direct models, and Vikunja/Todoist/Super Productivity import parsers):
 ```bash
 flutter test
 ```
 
-### 4. Verify Android Native Cross-Compilation (Optional but recommended)
+### 4. Run Relay Server Tests (Go)
+If modifying the standalone relay service:
+```bash
+cd relay-server
+go test -v ./...
+cd ..
+```
+
+### 5. Verify Android Native Cross-Compilation (Optional but recommended)
 If you made changes to Rust dependencies or platform bindings:
 ```bash
 ANDROID_NDK_HOME=$HOME/Android/Sdk/ndk/<version> ./scripts/build_android_rust.sh

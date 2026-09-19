@@ -14,55 +14,63 @@
   <img src="https://img.shields.io/badge/rust-edition%202024-DEA584.svg?logo=rust&logoColor=white" alt="Rust">
   <img src="https://img.shields.io/badge/CRDT-Automerge-ff69b4.svg" alt="Automerge CRDT">
   <img src="https://img.shields.io/badge/platforms-Android%20%7C%20Linux%20%7C%20Windows%20%7C%20iOS-brightgreen.svg" alt="Platforms">
+  <img src="https://img.shields.io/badge/tests-passing-brightgreen.svg" alt="Tests">
 </p>
 
 ---
 
 ## 💡 What is Cycles?
 
-Most task managers force a trade-off:
-- **Cloud-hosted apps** (Todoist, Vikunja) require accounts, constant internet access, and trusting third-party servers with your personal data.
-- **Local-first apps** (Super Productivity) store data on-device, but syncing requires manual cloud accounts (Dropbox, WebDAV) and fails when devices are offline or not on the same Wi-Fi network.
+Most task managers force a compromise:
+- **Cloud-hosted apps** (Todoist, Vikunja, TickTick) require central accounts, constant internet access, and surrender your personal data to remote servers.
+- **Local-first apps** (Super Productivity, Logseq) store data on-device, but cross-device synchronization requires manual cloud accounts (Dropbox, WebDAV, Google Drive) and fails whenever devices are offline or off-grid.
 
-**Cycles bridges this gap.** It is a true local-first task app that synchronizes directly between nearby devices using **Bluetooth Low Energy (BLE)**:
-- **Zero Shared Infrastructure**: Sync while camping, on a plane, or during internet outages.
-- **No Accounts or Telemetry**: No emails, passwords, or tracking.
-- **Conflict-Free Replicated Data**: Concurrent offline edits merge deterministically via **Automerge CRDTs**.
+**Cycles eliminates this compromise.** It is a true local-first task app that synchronizes directly between devices in physical proximity using **Wi-Fi Direct**, **Local LAN mDNS**, and **Bluetooth Low Energy (BLE)**:
+- **Zero Shared Infrastructure**: Sync while camping, on a plane, in a subway, or during internet outages.
+- **No Accounts or Telemetry**: No emails, passwords, phone numbers, or analytics tracking.
+- **Conflict-Free Replicated Data**: Concurrent multi-device edits merge deterministically via **Automerge CRDTs**.
 
 ---
 
 ## ✨ Features
 
-- **📶 Proximity Peer-to-Peer Sync**: Automatic BLE discovery, deterministic role tie-breaking, and chunked GATT transfer with CRC32 verification.
-- **⚡ Single-Store Architecture**: Blends reactive SQLite queries ([Drift](https://drift.simonbinder.eu/)) for sub-millisecond UI rendering with Automerge binary change-tracking for conflict resolution.
+- **🌐 4-Tier Transport Hierarchy**:
+  1. **Wi-Fi Direct P2P** (~15–50 MB/s direct device-to-device Wi-Fi without routers).
+  2. **Local LAN Fast-Path** (~5–20 MB/s mDNS discovery over shared Wi-Fi / Ethernet).
+  3. **Proximity BLE GATT** (~50–200 KB/s zero-infrastructure proximity sync with chunked CRC-32 frames).
+  4. **Remote Zero-Knowledge Relay** (optional self-hosted Go WebSocket server for out-of-proximity sync).
+- **⚡ Single-Store Architecture**: Blends reactive SQLite queries ([Drift](https://drift.simonbinder.eu/)) for sub-millisecond UI rendering with Automerge binary change-tracking (`sync_changes`) for mathematical conflict resolution.
+- **📝 Full-Featured Task Management**: Markdown notes, project organization, tag filtering, priority tiers (None, Low, Medium, High), and due dates with time picker.
+- **🔔 Local Notifications**: Timezone-aware due-date reminders with automated cancellation when tasks complete.
+- **📱 Home-Screen Widgets**: Native Material Design 3 widget for Android and WidgetKit extension for iOS (App Group container).
+- **🔄 One-Click Migration**: Import tasks, projects, notes, and priorities seamlessly from **Vikunja**, **Todoist**, and **Super Productivity**.
 - **🔒 Trust On First Use (TOFU)**: Pair devices securely on the fly. View, trust, or revoke peers anytime in the Nearby Devices screen.
-- **🎨 Modern Cross-Platform UI**: Built with Flutter for consistent typography, adaptive layouts, and responsive themes across Android, Linux, iOS, and Windows.
-- **🦀 High-Performance Rust Core**: Networking, framing, and CRDT math run in compiled native Rust via `flutter_rust_bridge`.
+- **🦀 High-Performance Native Core**: Networking, framing, and CRDT math run in compiled native Rust via `flutter_rust_bridge`.
 
 ---
 
 ## 🏛️ System Architecture
 
-Cycles employs a clean layered architecture connecting the Flutter UI to the native Rust CRDT and BLE engine:
+Cycles employs a layered architecture connecting the Flutter UI to the native Rust engine and native OS subsystems:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Flutter / Dart UI Layer                     │
 │  ┌───────────────────────┐           ┌───────────────────────┐  │
-│  │  Reactive Task Views  │           │ Nearby Devices Screen │  │
+│  │ Task & Import Screens │           │ Nearby Devices Screen │  │
 │  └───────────┬───────────┘           └───────────┬───────────┘  │
-│              │ (Streams)                         │ (Scan/Pair)  │
+│              │ (Streams)                         │              │
 │  ┌───────────▼───────────┐           ┌───────────▼───────────┐  │
-│  │   Drift Relational    │◄──────────┤   BleSyncService      │  │
-│  │   SQLite Database     │ (SyncDiff)│   (State & Discovery) │  │
+│  │   Drift Relational    │◄──────────┤   SyncOrchestrator    │  │
+│  │   SQLite Database     │ (SyncDiff)│ (WFD, LAN, BLE, Relay)│  │
 │  └───────────────────────┘           └───────────┬───────────┘  │
 └──────────────────────────────────────────────────┼──────────────┘
                                                    │ FFI
 ┌──────────────────────────────────────────────────▼──────────────┐
 │                    Rust Core (cycles_core)                      │
 │  ┌───────────────────────┐           ┌───────────────────────┐  │
-│  │   Automerge Engine    │           │    BLE GATT Engine    │  │
-│  │ (crdt.rs / store.rs)  │           │  (Central & Server)   │  │
+│  │   Automerge Engine    │           │ Multi-Tier Transports │  │
+│  │ (crdt.rs / store.rs)  │           │(WFD, LAN, BLE, Relay) │  │
 │  └───────────┬───────────┘           └───────────┬───────────┘  │
 │              │                                   │              │
 │  ┌───────────▼───────────┐           ┌───────────▼───────────┐  │
@@ -72,7 +80,7 @@ Cycles employs a clean layered architecture connecting the Flutter UI to the nat
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-For complete technical specifications, see [ARCHITECTURE.md](ARCHITECTURE.md) and [docs/SYNC_PROTOCOL.md](docs/SYNC_PROTOCOL.md).
+For complete technical specifications, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
 
@@ -83,6 +91,7 @@ For complete technical specifications, see [ARCHITECTURE.md](ARCHITECTURE.md) an
 - **Rust Toolchain**: Stable (Edition 2024)
 - **flutter_rust_bridge_codegen**: `v2.13.0` (`cargo install 'flutter_rust_bridge_codegen@=2.13.0'`)
 - **BlueZ Development Headers** (Linux): `sudo apt-get install libdbus-1-dev pkg-config`
+- **Android NDK** (for Android cross-compilation): Recommended NDK `r26`+ and `cargo-ndk`.
 
 ### 1. Clone and Install Dependencies
 ```bash
@@ -100,7 +109,7 @@ cd ..
 ```
 
 ### 3. Run the Application
-To run on your desktop (Linux/macOS/Windows):
+To run on desktop (Linux/macOS/Windows):
 ```bash
 flutter run
 ```
@@ -118,42 +127,50 @@ flutter run -d <device-id>
 
 ## 🧪 Testing
 
-Cycles maintains automated test suites across both Rust and Flutter:
+Cycles maintains exhaustive automated test suites across Rust, Flutter, and the Go relay server:
 
 ```bash
-# Run Rust CRDT, framing, pairing, and tie-breaking tests
+# 1. Run Rust CRDT, framing, pairing, LAN, Wi-Fi Direct, and relay client tests (28 passed)
 cd rust && cargo test && cd ..
 
-# Run Flutter static analysis
+# 2. Run Flutter static analysis (0 issues)
 flutter analyze
 
-# Run Flutter widget and FFI bridge tests
+# 3. Run Flutter unit, widget, Wi-Fi Direct, and import tests (15 passed)
 flutter test
+
+# 4. Run Go relay server unit & integration tests (7 passed)
+cd relay-server && go test -v ./... && cd ..
 ```
 
 ---
 
-## 📚 Documentation
+## 📚 Documentation Index
 
 - [System Architecture](ARCHITECTURE.md) — Comprehensive guide to the single-store boundary, CRDTs, and subsystem design.
-- [Proximity Sync Protocol](docs/SYNC_PROTOCOL.md) — BLE GATT characteristics, binary frame header layout, and sync state machine.
+- [Multi-Tier Transports](docs/TRANSPORTS.md) — Detailed guide to the Wi-Fi Direct, Local LAN, BLE GATT, and Relay hierarchy.
+- [Single-Store CRDT Storage](docs/CRDT_STORAGE.md) — Automerge schema, SQLite `sync_changes` persistence, and vector clock exchange.
+- [Proximity Sync Protocol](docs/SYNC_PROTOCOL.md) — BLE GATT characteristics, 10-byte binary frame header layout, and state machine.
+- [Platform Setup Guide](docs/PLATFORM_GUIDE.md) — Linux, Android NDK cross-compilation, iOS Swift GATT bridge, and Windows build instructions.
+- [Data Import & Migration](docs/IMPORT_MIGRATION.md) — Step-by-step guides for importing from Vikunja, Todoist, and Super Productivity.
+- [Relay Server Deployment](docs/RELAY_DEPLOYMENT.md) — Production deployment instructions for the self-hosted Go relay server with Docker and TLS.
 - [Contributing Guide](CONTRIBUTING.md) — Development setup, codegen instructions, and commit standards.
 - [Security Policy](SECURITY.md) — Threat model, zero-knowledge privacy guarantees, and vulnerability reporting.
 
 ---
 
-## 🗺️ Roadmap & Phases
+## 🗺️ Roadmap & Completed Phases
 
-- [x] **Phase 1: MVP**: Flutter reactive task dashboard + Drift SQLite relational store.
+- [x] **Phase 1: MVP Scaffold**: Flutter reactive task dashboard + Drift SQLite relational store.
 - [x] **Phase 2: FFI Toolchain**: `flutter_rust_bridge` cross-compilation and automated bridge test pipeline.
 - [x] **Phase 3: BLE Discovery & Transport**: GATT Central/Server, deterministic tie-breaking, TOFU pairing, and chunked byte pipe with CRC32.
 - [x] **Phase 4: CRDT Engine**: Automerge document replication, vector clock exchange, and single-store SQLite integration.
-- [ ] **Phase 5: Fast-Path Transports**: Opportunistic local Wi-Fi mDNS + TCP socket upgrades.
-- [ ] **Phase 6: Remote Relay Server**: Optional zero-knowledge self-hosted relay for non-proximity sync.
-- [ ] **Phase 7: Feature Polish**: Due date reminders, local notifications, recurring rules, and import/export tools.
+- [x] **Phase 5: Fast-Path Transports**: Local Wi-Fi mDNS + TCP sockets (port 47225) and Wi-Fi Direct P2P (port 47226).
+- [x] **Phase 6: Remote Relay Server**: Standalone zero-knowledge Go WebSocket relay service + Rust relay client transport.
+- [x] **Phase 7: Platform Polish & Task UI**: Full task detail editing UI, local due-date notifications, Android & iOS home-screen widgets, Android BLE runtime permissions, iOS Swift GATT peripheral bridge, and Vikunja/Todoist/Super Productivity importers.
 
 ---
 
 ## 📄 License
 
-Cycles is licensed under the [MIT License](LICENSE).
+Cycles is open-source software licensed under the [MIT License](LICENSE).

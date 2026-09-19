@@ -66,5 +66,14 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Cycles uses Bluetooth Low Energy to discover and sync tasks peer-to-peer with nearby devices without internet access.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>Cycles advertises a local sync service to exchange task updates with nearby devices.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>bluetooth-central</string>
+		<string>bluetooth-peripheral</string>
+	</array>
 </dict>
 </plist>

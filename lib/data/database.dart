@@ -4,13 +4,24 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import 'tables.dart';
+import '../services/widget_sync_service.dart';
 
 part 'database.g.dart';
 
 @DriftDatabase(tables: [Projects, Tasks, SyncChanges, RelaySettings])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  AppDatabase() : super(_openConnection()) {
+    _initWidgetSync();
+  }
   AppDatabase.forTesting(super.executor);
+
+  void _initWidgetSync() {
+    watchAllTasks().listen((taskList) {
+      WidgetSyncService.instance.updateWidgetTasks(taskList);
+    });
+  }
+
+  Stream<List<Task>> watchAllTasks() => select(tasks).watch();
 
   @override
   int get schemaVersion => 3;
