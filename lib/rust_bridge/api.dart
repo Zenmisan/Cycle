@@ -10,7 +10,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
 // These functions are ignored because they are not marked as `pub`: `get_ble_state`, `state`
 // These types are ignored because they are neither used by any `pub` functions nor (for structs and enums) marked `#[frb(unignore)]`: `BleState`, `CrdtState`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
 
 Future<String> ping({required String name}) =>
     RustLib.instance.api.crateApiPing(name: name);
@@ -123,6 +123,22 @@ Future<WifiDirectSyncReport> syncWithPeerWifiDirect({
 }) => RustLib.instance.api.crateApiSyncWithPeerWifiDirect(
   peerId: peerId,
   address: address,
+);
+
+/// Runs one relay sync round with a peer, via a self-hosted relay server.
+/// Opt-in only — the Dart side is responsible for checking the user's relay
+/// settings (enabled + URL configured) before ever calling this; this
+/// function doesn't know or enforce that itself, it just performs the sync
+/// if asked. Reuses the exact same `generate_sync_message`/`merge_incoming`
+/// seam every other transport uses — only the pipe differs.
+Future<RelaySyncReport> syncWithPeerRelay({
+  required String peerId,
+  required String relayUrl,
+  required String token,
+}) => RustLib.instance.api.crateApiSyncWithPeerRelay(
+  peerId: peerId,
+  relayUrl: relayUrl,
+  token: token,
 );
 
 class BlePeer {
@@ -261,6 +277,31 @@ class LanSyncReport {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is LanSyncReport &&
+          runtimeType == other.runtimeType &&
+          peerId == other.peerId &&
+          success == other.success &&
+          tasksUpdated == other.tasksUpdated;
+}
+
+class RelaySyncReport {
+  final String peerId;
+  final bool success;
+  final BigInt tasksUpdated;
+
+  const RelaySyncReport({
+    required this.peerId,
+    required this.success,
+    required this.tasksUpdated,
+  });
+
+  @override
+  int get hashCode =>
+      peerId.hashCode ^ success.hashCode ^ tasksUpdated.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is RelaySyncReport &&
           runtimeType == other.runtimeType &&
           peerId == other.peerId &&
           success == other.success &&

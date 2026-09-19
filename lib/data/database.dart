@@ -7,13 +7,13 @@ import 'tables.dart';
 
 part 'database.g.dart';
 
-@DriftDatabase(tables: [Projects, Tasks, SyncChanges])
+@DriftDatabase(tables: [Projects, Tasks, SyncChanges, RelaySettings])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -22,8 +22,39 @@ class AppDatabase extends _$AppDatabase {
       if (from < 2) {
         await m.createTable(syncChanges);
       }
+      if (from < 3) {
+        await m.createTable(relaySettings);
+      }
     },
   );
+
+  /// The single relay settings row, creating a disabled default if absent.
+  Future<RelaySetting> getRelaySettings() async {
+    final existing = await (select(
+      relaySettings,
+    )..where((r) => r.id.equals(0))).getSingleOrNull();
+    if (existing != null) return existing;
+    final defaults = RelaySettingsCompanion.insert(id: const Value(0));
+    await into(relaySettings).insertOnConflictUpdate(defaults);
+    return (select(
+      relaySettings,
+    )..where((r) => r.id.equals(0))).getSingle();
+  }
+
+  Future<void> setRelaySettings({
+    required bool enabled,
+    required String relayUrl,
+    required String token,
+  }) {
+    return into(relaySettings).insertOnConflictUpdate(
+      RelaySettingsCompanion(
+        id: const Value(0),
+        enabled: Value(enabled),
+        relayUrl: Value(relayUrl),
+        token: Value(token),
+      ),
+    );
+  }
 
   /// Absolute path to the underlying SQLite file, for handing to the Rust
   /// core so it can open its own connection (see PLAN.md's Drift<->Automerge

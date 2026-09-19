@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1156711978;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -2130557055;
 
 // Section: executor
 
@@ -676,6 +676,46 @@ fn wire__crate__api__sync_with_peer_lan_impl(
         },
     )
 }
+fn wire__crate__api__sync_with_peer_relay_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_async::<flutter_rust_bridge::for_generated::SseCodec, _, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "sync_with_peer_relay",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_peer_id = <String>::sse_decode(&mut deserializer);
+            let api_relay_url = <String>::sse_decode(&mut deserializer);
+            let api_token = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| async move {
+                transform_result_sse::<_, String>(
+                    (move || async move {
+                        let output_ok =
+                            crate::api::sync_with_peer_relay(api_peer_id, api_relay_url, api_token)
+                                .await?;
+                        std::result::Result::Ok(output_ok)
+                    })()
+                    .await,
+                )
+            }
+        },
+    )
+}
 fn wire__crate__api__sync_with_peer_wifi_direct_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -928,6 +968,20 @@ impl SseDecode for Option<Vec<u8>> {
     }
 }
 
+impl SseDecode for crate::api::RelaySyncReport {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_peerId = <String>::sse_decode(deserializer);
+        let mut var_success = <bool>::sse_decode(deserializer);
+        let mut var_tasksUpdated = <usize>::sse_decode(deserializer);
+        return crate::api::RelaySyncReport {
+            peer_id: var_peerId,
+            success: var_success,
+            tasks_updated: var_tasksUpdated,
+        };
+    }
+}
+
 impl SseDecode for crate::crdt::TaskRecord {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1039,7 +1093,8 @@ fn pde_ffi_dispatcher_primary_impl(
         16 => wire__crate__api__stop_ble_advertising_impl(port, ptr, rust_vec_len, data_len),
         17 => wire__crate__api__sync_with_peer_ble_impl(port, ptr, rust_vec_len, data_len),
         18 => wire__crate__api__sync_with_peer_lan_impl(port, ptr, rust_vec_len, data_len),
-        19 => wire__crate__api__sync_with_peer_wifi_direct_impl(port, ptr, rust_vec_len, data_len),
+        19 => wire__crate__api__sync_with_peer_relay_impl(port, ptr, rust_vec_len, data_len),
+        20 => wire__crate__api__sync_with_peer_wifi_direct_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -1145,6 +1200,25 @@ impl flutter_rust_bridge::IntoDart for crate::api::LanSyncReport {
 impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::LanSyncReport {}
 impl flutter_rust_bridge::IntoIntoDart<crate::api::LanSyncReport> for crate::api::LanSyncReport {
     fn into_into_dart(self) -> crate::api::LanSyncReport {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::RelaySyncReport {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.peer_id.into_into_dart().into_dart(),
+            self.success.into_into_dart().into_dart(),
+            self.tasks_updated.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::RelaySyncReport {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::RelaySyncReport>
+    for crate::api::RelaySyncReport
+{
+    fn into_into_dart(self) -> crate::api::RelaySyncReport {
         self
     }
 }
@@ -1359,6 +1433,15 @@ impl SseEncode for Option<Vec<u8>> {
         if let Some(value) = self {
             <Vec<u8>>::sse_encode(value, serializer);
         }
+    }
+}
+
+impl SseEncode for crate::api::RelaySyncReport {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.peer_id, serializer);
+        <bool>::sse_encode(self.success, serializer);
+        <usize>::sse_encode(self.tasks_updated, serializer);
     }
 }
 

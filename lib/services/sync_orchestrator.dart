@@ -14,6 +14,11 @@ enum TransportTier {
 
   /// Universal fallback: Low-power Bluetooth Low Energy GATT transport.
   ble,
+
+  /// Last resort: opt-in relay server, for a peer with no proximity
+  /// connection available at all. Only attempted if the user has enabled it
+  /// in settings and configured a relay URL.
+  relay,
 }
 
 /// Consolidated result of a multi-transport synchronization attempt.
@@ -121,6 +126,69 @@ Future<MultiTransportSyncResult> syncPeerWithPriority({
 
   // Tier 3: BLE GATT (universal proximity transport, works with zero shared networks)
   final bleReport = await bleService.syncWithPeer(peer, db);
+  if (bleReport.success) {
+    return MultiTransportSyncResult(
+      tierUsed: TransportTier.ble,
+      success: true,
+      message: bleReport.message,
+      tasksUpdated: bleReport.tasksUpdated.toInt(),
+    );
+  }
+
+  // Tier 4: relay (opt-in, last resort — peer has no proximity connection
+  // at all). Only attempted if the user enabled it and configured a URL;
+  // never default-on. If unavailable/disabled, fall back to the BLE result
+  // above (even on failure — it's the most informative message we have).
+  final relaySettings = await db.getRelaySettings();
+  if (relaySettings.enabled && relaySettings.relayUrl.isNotEmpty) {
+    try {
+      final relayReport = await rust.syncWithPeerRelay(
+        peerId: peer.deviceId,
+        relayUrl: relaySettings.relayUrl,
+        token: relaySettings.token,
+      );
+      if (relayReport.success) {
+        final allTasks = await rust.allTasks();
+        for (final t in allTasks) {
+          await db.upsertTask(
+            TasksCompanion(
+              id: Value(t.id),
+              projectId: Value(t.projectId),
+              title: Value(t.title),
+              notes: Value(t.notes),
+              due: Value(
+                t.dueMillis != null
+                    ? DateTime.fromMillisecondsSinceEpoch(t.dueMillis!.toInt())
+                    : null,
+              ),
+              tags: Value(t.tags.join(',')),
+              status: Value(t.status),
+              priority: Value(t.priority),
+              createdAt: Value(
+                DateTime.fromMillisecondsSinceEpoch(
+                  t.createdAtMillis.toInt(),
+                ),
+              ),
+              updatedAt: Value(
+                DateTime.fromMillisecondsSinceEpoch(
+                  t.updatedAtMillis.toInt(),
+                ),
+              ),
+            ),
+          );
+        }
+        return MultiTransportSyncResult(
+          tierUsed: TransportTier.relay,
+          success: true,
+          message: 'Synced via relay (${relayReport.tasksUpdated} tasks updated)',
+          tasksUpdated: relayReport.tasksUpdated.toInt(),
+        );
+      }
+    } catch (_) {
+      // Fall through to the BLE result below.
+    }
+  }
+
   return MultiTransportSyncResult(
     tierUsed: TransportTier.ble,
     success: bleReport.success,

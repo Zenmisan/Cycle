@@ -68,7 +68,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => -1156711978;
+  int get rustContentHash => -2130557055;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -129,6 +129,12 @@ abstract class RustLibApi extends BaseApi {
   Future<LanSyncReport> crateApiSyncWithPeerLan({
     required String peerId,
     required String address,
+  });
+
+  Future<RelaySyncReport> crateApiSyncWithPeerRelay({
+    required String peerId,
+    required String relayUrl,
+    required String token,
   });
 
   Future<WifiDirectSyncReport> crateApiSyncWithPeerWifiDirect({
@@ -675,6 +681,42 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  Future<RelaySyncReport> crateApiSyncWithPeerRelay({
+    required String peerId,
+    required String relayUrl,
+    required String token,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(peerId, serializer);
+          sse_encode_String(relayUrl, serializer);
+          sse_encode_String(token, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 19,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_relay_sync_report,
+          decodeErrorData: sse_decode_String,
+        ),
+        constMeta: kCrateApiSyncWithPeerRelayConstMeta,
+        argValues: [peerId, relayUrl, token],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSyncWithPeerRelayConstMeta => const TaskConstMeta(
+    debugName: "sync_with_peer_relay",
+    argNames: ["peerId", "relayUrl", "token"],
+  );
+
+  @override
   Future<WifiDirectSyncReport> crateApiSyncWithPeerWifiDirect({
     required String peerId,
     required String address,
@@ -688,7 +730,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 19,
+            funcId: 20,
             port: port_,
           );
         },
@@ -877,6 +919,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Uint8List? dco_decode_opt_list_prim_u_8_strict(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_list_prim_u_8_strict(raw);
+  }
+
+  @protected
+  RelaySyncReport dco_decode_relay_sync_report(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return RelaySyncReport(
+      peerId: dco_decode_String(arr[0]),
+      success: dco_decode_bool(arr[1]),
+      tasksUpdated: dco_decode_usize(arr[2]),
+    );
   }
 
   @protected
@@ -1169,6 +1224,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  RelaySyncReport sse_decode_relay_sync_report(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_peerId = sse_decode_String(deserializer);
+    var var_success = sse_decode_bool(deserializer);
+    var var_tasksUpdated = sse_decode_usize(deserializer);
+    return RelaySyncReport(
+      peerId: var_peerId,
+      success: var_success,
+      tasksUpdated: var_tasksUpdated,
+    );
+  }
+
+  @protected
   TaskRecord sse_decode_task_record(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_id = sse_decode_String(deserializer);
@@ -1457,6 +1525,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     if (self != null) {
       sse_encode_list_prim_u_8_strict(self, serializer);
     }
+  }
+
+  @protected
+  void sse_encode_relay_sync_report(
+    RelaySyncReport self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.peerId, serializer);
+    sse_encode_bool(self.success, serializer);
+    sse_encode_usize(self.tasksUpdated, serializer);
   }
 
   @protected

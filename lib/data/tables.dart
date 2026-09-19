@@ -33,3 +33,16 @@ class SyncChanges extends Table {
   BlobColumn get changeBytes => blob()();
   DateTimeColumn get createdAt => dateTime()();
 }
+
+/// Relay (phase 6, opt-in last-resort sync) configuration. Single row,
+/// `id` always 0 — off by default, user must explicitly enable and supply
+/// their own self-hosted relay's URL + shared-secret token.
+class RelaySettings extends Table {
+  IntColumn get id => integer().withDefault(const Constant(0))();
+  BoolColumn get enabled => boolean().withDefault(const Constant(false))();
+  TextColumn get relayUrl => text().withDefault(const Constant(''))();
+  TextColumn get token => text().withDefault(const Constant(''))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

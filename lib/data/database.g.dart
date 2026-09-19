@@ -1103,12 +1103,306 @@ class SyncChangesCompanion extends UpdateCompanion<SyncChange> {
   }
 }
 
+class $RelaySettingsTable extends RelaySettings
+    with TableInfo<$RelaySettingsTable, RelaySetting> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RelaySettingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _enabledMeta = const VerificationMeta(
+    'enabled',
+  );
+  @override
+  late final GeneratedColumn<bool> enabled = GeneratedColumn<bool>(
+    'enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _relayUrlMeta = const VerificationMeta(
+    'relayUrl',
+  );
+  @override
+  late final GeneratedColumn<String> relayUrl = GeneratedColumn<String>(
+    'relay_url',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _tokenMeta = const VerificationMeta('token');
+  @override
+  late final GeneratedColumn<String> token = GeneratedColumn<String>(
+    'token',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, enabled, relayUrl, token];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'relay_settings';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<RelaySetting> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('enabled')) {
+      context.handle(
+        _enabledMeta,
+        enabled.isAcceptableOrUnknown(data['enabled']!, _enabledMeta),
+      );
+    }
+    if (data.containsKey('relay_url')) {
+      context.handle(
+        _relayUrlMeta,
+        relayUrl.isAcceptableOrUnknown(data['relay_url']!, _relayUrlMeta),
+      );
+    }
+    if (data.containsKey('token')) {
+      context.handle(
+        _tokenMeta,
+        token.isAcceptableOrUnknown(data['token']!, _tokenMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RelaySetting map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RelaySetting(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      enabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}enabled'],
+      )!,
+      relayUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}relay_url'],
+      )!,
+      token: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}token'],
+      )!,
+    );
+  }
+
+  @override
+  $RelaySettingsTable createAlias(String alias) {
+    return $RelaySettingsTable(attachedDatabase, alias);
+  }
+}
+
+class RelaySetting extends DataClass implements Insertable<RelaySetting> {
+  final int id;
+  final bool enabled;
+  final String relayUrl;
+  final String token;
+  const RelaySetting({
+    required this.id,
+    required this.enabled,
+    required this.relayUrl,
+    required this.token,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['enabled'] = Variable<bool>(enabled);
+    map['relay_url'] = Variable<String>(relayUrl);
+    map['token'] = Variable<String>(token);
+    return map;
+  }
+
+  RelaySettingsCompanion toCompanion(bool nullToAbsent) {
+    return RelaySettingsCompanion(
+      id: Value(id),
+      enabled: Value(enabled),
+      relayUrl: Value(relayUrl),
+      token: Value(token),
+    );
+  }
+
+  factory RelaySetting.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RelaySetting(
+      id: serializer.fromJson<int>(json['id']),
+      enabled: serializer.fromJson<bool>(json['enabled']),
+      relayUrl: serializer.fromJson<String>(json['relayUrl']),
+      token: serializer.fromJson<String>(json['token']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'enabled': serializer.toJson<bool>(enabled),
+      'relayUrl': serializer.toJson<String>(relayUrl),
+      'token': serializer.toJson<String>(token),
+    };
+  }
+
+  RelaySetting copyWith({
+    int? id,
+    bool? enabled,
+    String? relayUrl,
+    String? token,
+  }) => RelaySetting(
+    id: id ?? this.id,
+    enabled: enabled ?? this.enabled,
+    relayUrl: relayUrl ?? this.relayUrl,
+    token: token ?? this.token,
+  );
+  RelaySetting copyWithCompanion(RelaySettingsCompanion data) {
+    return RelaySetting(
+      id: data.id.present ? data.id.value : this.id,
+      enabled: data.enabled.present ? data.enabled.value : this.enabled,
+      relayUrl: data.relayUrl.present ? data.relayUrl.value : this.relayUrl,
+      token: data.token.present ? data.token.value : this.token,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RelaySetting(')
+          ..write('id: $id, ')
+          ..write('enabled: $enabled, ')
+          ..write('relayUrl: $relayUrl, ')
+          ..write('token: $token')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, enabled, relayUrl, token);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RelaySetting &&
+          other.id == this.id &&
+          other.enabled == this.enabled &&
+          other.relayUrl == this.relayUrl &&
+          other.token == this.token);
+}
+
+class RelaySettingsCompanion extends UpdateCompanion<RelaySetting> {
+  final Value<int> id;
+  final Value<bool> enabled;
+  final Value<String> relayUrl;
+  final Value<String> token;
+  const RelaySettingsCompanion({
+    this.id = const Value.absent(),
+    this.enabled = const Value.absent(),
+    this.relayUrl = const Value.absent(),
+    this.token = const Value.absent(),
+  });
+  RelaySettingsCompanion.insert({
+    this.id = const Value.absent(),
+    this.enabled = const Value.absent(),
+    this.relayUrl = const Value.absent(),
+    this.token = const Value.absent(),
+  });
+  static Insertable<RelaySetting> custom({
+    Expression<int>? id,
+    Expression<bool>? enabled,
+    Expression<String>? relayUrl,
+    Expression<String>? token,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (enabled != null) 'enabled': enabled,
+      if (relayUrl != null) 'relay_url': relayUrl,
+      if (token != null) 'token': token,
+    });
+  }
+
+  RelaySettingsCompanion copyWith({
+    Value<int>? id,
+    Value<bool>? enabled,
+    Value<String>? relayUrl,
+    Value<String>? token,
+  }) {
+    return RelaySettingsCompanion(
+      id: id ?? this.id,
+      enabled: enabled ?? this.enabled,
+      relayUrl: relayUrl ?? this.relayUrl,
+      token: token ?? this.token,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (enabled.present) {
+      map['enabled'] = Variable<bool>(enabled.value);
+    }
+    if (relayUrl.present) {
+      map['relay_url'] = Variable<String>(relayUrl.value);
+    }
+    if (token.present) {
+      map['token'] = Variable<String>(token.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RelaySettingsCompanion(')
+          ..write('id: $id, ')
+          ..write('enabled: $enabled, ')
+          ..write('relayUrl: $relayUrl, ')
+          ..write('token: $token')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $ProjectsTable projects = $ProjectsTable(this);
   late final $TasksTable tasks = $TasksTable(this);
   late final $SyncChangesTable syncChanges = $SyncChangesTable(this);
+  late final $RelaySettingsTable relaySettings = $RelaySettingsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1117,6 +1411,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     projects,
     tasks,
     syncChanges,
+    relaySettings,
   ];
 }
 
@@ -1949,6 +2244,190 @@ typedef $$SyncChangesTableProcessedTableManager =
       SyncChange,
       PrefetchHooks Function()
     >;
+typedef $$RelaySettingsTableCreateCompanionBuilder =
+    RelaySettingsCompanion Function({
+      Value<int> id,
+      Value<bool> enabled,
+      Value<String> relayUrl,
+      Value<String> token,
+    });
+typedef $$RelaySettingsTableUpdateCompanionBuilder =
+    RelaySettingsCompanion Function({
+      Value<int> id,
+      Value<bool> enabled,
+      Value<String> relayUrl,
+      Value<String> token,
+    });
+
+class $$RelaySettingsTableFilterComposer
+    extends Composer<_$AppDatabase, $RelaySettingsTable> {
+  $$RelaySettingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get enabled => $composableBuilder(
+    column: $table.enabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get relayUrl => $composableBuilder(
+    column: $table.relayUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get token => $composableBuilder(
+    column: $table.token,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$RelaySettingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $RelaySettingsTable> {
+  $$RelaySettingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get enabled => $composableBuilder(
+    column: $table.enabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get relayUrl => $composableBuilder(
+    column: $table.relayUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get token => $composableBuilder(
+    column: $table.token,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$RelaySettingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RelaySettingsTable> {
+  $$RelaySettingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<bool> get enabled =>
+      $composableBuilder(column: $table.enabled, builder: (column) => column);
+
+  GeneratedColumn<String> get relayUrl =>
+      $composableBuilder(column: $table.relayUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get token =>
+      $composableBuilder(column: $table.token, builder: (column) => column);
+}
+
+class $$RelaySettingsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $RelaySettingsTable,
+          RelaySetting,
+          $$RelaySettingsTableFilterComposer,
+          $$RelaySettingsTableOrderingComposer,
+          $$RelaySettingsTableAnnotationComposer,
+          $$RelaySettingsTableCreateCompanionBuilder,
+          $$RelaySettingsTableUpdateCompanionBuilder,
+          (
+            RelaySetting,
+            BaseReferences<_$AppDatabase, $RelaySettingsTable, RelaySetting>,
+          ),
+          RelaySetting,
+          PrefetchHooks Function()
+        > {
+  $$RelaySettingsTableTableManager(_$AppDatabase db, $RelaySettingsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RelaySettingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RelaySettingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RelaySettingsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<bool> enabled = const Value.absent(),
+                Value<String> relayUrl = const Value.absent(),
+                Value<String> token = const Value.absent(),
+              }) => RelaySettingsCompanion(
+                id: id,
+                enabled: enabled,
+                relayUrl: relayUrl,
+                token: token,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<bool> enabled = const Value.absent(),
+                Value<String> relayUrl = const Value.absent(),
+                Value<String> token = const Value.absent(),
+              }) => RelaySettingsCompanion.insert(
+                id: id,
+                enabled: enabled,
+                relayUrl: relayUrl,
+                token: token,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$RelaySettingsTable, RelaySetting>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $RelaySettingsTable,
+                    RelaySetting
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$RelaySettingsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $RelaySettingsTable,
+      RelaySetting,
+      $$RelaySettingsTableFilterComposer,
+      $$RelaySettingsTableOrderingComposer,
+      $$RelaySettingsTableAnnotationComposer,
+      $$RelaySettingsTableCreateCompanionBuilder,
+      $$RelaySettingsTableUpdateCompanionBuilder,
+      (
+        RelaySetting,
+        BaseReferences<_$AppDatabase, $RelaySettingsTable, RelaySetting>,
+      ),
+      RelaySetting,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1959,4 +2438,6 @@ class $AppDatabaseManager {
       $$TasksTableTableManager(_db, _db.tasks);
   $$SyncChangesTableTableManager get syncChanges =>
       $$SyncChangesTableTableManager(_db, _db.syncChanges);
+  $$RelaySettingsTableTableManager get relaySettings =>
+      $$RelaySettingsTableTableManager(_db, _db.relaySettings);
 }

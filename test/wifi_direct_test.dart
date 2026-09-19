@@ -48,11 +48,12 @@ void main() {
   });
 
   group('TransportTier enum ordering', () {
-    test('tiers represent upgrade hierarchy: wifiDirect > lan > ble', () {
-      expect(TransportTier.values.length, 3);
+    test('tiers represent upgrade hierarchy: wifiDirect > lan > ble > relay', () {
+      expect(TransportTier.values.length, 4);
       expect(TransportTier.wifiDirect.index, 0);
       expect(TransportTier.lan.index, 1);
       expect(TransportTier.ble.index, 2);
+      expect(TransportTier.relay.index, 3);
     });
   });
 }

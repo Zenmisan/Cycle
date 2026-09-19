@@ -479,3 +479,43 @@ pub async fn sync_with_peer_wifi_direct(
         tasks_updated: updated.len(),
     })
 }
+
+// ---------------------------------------------------------------------------
+// Relay Transport FFI (phase 6, opt-in last-resort — appended here, clearly
+// separated, following the same pattern as the LAN/WiFi Direct sections above).
+// ---------------------------------------------------------------------------
+
+use crate::relay;
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct RelaySyncReport {
+    pub peer_id: String,
+    pub success: bool,
+    pub tasks_updated: usize,
+}
+
+/// Runs one relay sync round with a peer, via a self-hosted relay server.
+/// Opt-in only — the Dart side is responsible for checking the user's relay
+/// settings (enabled + URL configured) before ever calling this; this
+/// function doesn't know or enforce that itself, it just performs the sync
+/// if asked. Reuses the exact same `generate_sync_message`/`merge_incoming`
+/// seam every other transport uses — only the pipe differs.
+pub async fn sync_with_peer_relay(
+    peer_id: String,
+    relay_url: String,
+    token: String,
+) -> Result<RelaySyncReport, String> {
+    let local_id = get_device_id().await;
+    let outgoing = generate_sync_message(peer_id.clone())?.unwrap_or_default();
+
+    let response =
+        relay::sync_via_relay(&relay_url, &token, &local_id, &peer_id, outgoing).await?;
+
+    let updated = merge_incoming(peer_id.clone(), response)?;
+
+    Ok(RelaySyncReport {
+        peer_id,
+        success: true,
+        tasks_updated: updated.len(),
+    })
+}

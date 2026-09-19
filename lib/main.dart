@@ -9,6 +9,7 @@ import 'rust_bridge/api.dart' as rust;
 import 'rust_bridge/frb_generated.dart';
 import 'services/ble_sync_service.dart';
 import 'ui/peers_screen.dart';
+import 'ui/relay_settings_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -79,6 +80,15 @@ class ProjectListScreen extends StatelessWidget {
                   db: db,
                   bleService: bleService,
                 ),
+              ));
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.cloud_sync_outlined),
+            tooltip: 'Remote Sync (Relay)',
+            onPressed: () {
+              Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => RelaySettingsScreen(db: db),
               ));
             },
           ),

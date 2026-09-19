@@ -5,6 +5,7 @@ pub mod store;
 pub mod ble;
 pub mod lan;
 pub mod wifi_direct;
+pub mod relay;
 
 #[cfg(test)]
 mod tests {
