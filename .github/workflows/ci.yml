@@ -43,6 +43,15 @@ jobs:
           cargo test --verbose
           cd ..
 
+      - name: Build Rust Core (release)
+        # flutter_rust_bridge's default loader looks for the release .so at
+        # rust/target/release/ — without this, RustLib.init() fails to dlopen
+        # it and every FFI-touching Flutter test fails in setUpAll.
+        run: |
+          cd rust
+          cargo build --release --verbose
+          cd ..
+
       - name: Run Go Relay Server Tests
         run: |
           cd relay-server
