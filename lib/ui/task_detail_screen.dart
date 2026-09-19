@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../data/database.dart';
 import '../data/sync_bridge.dart';
 import '../services/notification_service.dart';
+import '../services/recurrence_service.dart';
 
 const List<String> kPriorityLabels = ['None', 'Low', 'Medium', 'High'];
 
@@ -39,6 +40,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   DateTime? _due;
   int _priority = 0;
   late String _projectId;
+  late String _recurrenceRule;
 
   bool get _isNew => widget.existing == null;
 
@@ -48,10 +50,19 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     final t = widget.existing;
     _titleController = TextEditingController(text: t?.title ?? '');
     _notesController = TextEditingController(text: t?.notes ?? '');
-    _tagsController = TextEditingController(text: t?.tags ?? '');
+    _tagsController = TextEditingController(
+      text: t?.tags != null
+          ? t!.tags
+              .split(',')
+              .map((e) => e.trim())
+              .where((e) => !e.toLowerCase().startsWith('repeat:'))
+              .join(', ')
+          : '',
+    );
     _due = t?.due;
     _priority = t?.priority ?? 0;
     _projectId = t?.projectId ?? widget.projectId;
+    _recurrenceRule = RecurrenceService.extractRule(t?.tags ?? '');
   }
 
   @override
@@ -92,13 +103,17 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
 
     final now = DateTime.now();
     final id = widget.existing?.id ?? const Uuid().v4();
+    final formattedTags = RecurrenceService.formatTagsWithRule(
+      _tagsController.text.trim(),
+      _recurrenceRule,
+    );
     final companion = TasksCompanion(
       id: Value(id),
       projectId: Value(_projectId),
       title: Value(_titleController.text.trim()),
       notes: Value(_notesController.text.trim()),
       due: Value(_due),
-      tags: Value(_tagsController.text.trim()),
+      tags: Value(formattedTags),
       status: Value(widget.existing?.status ?? 'open'),
       priority: Value(_priority),
       createdAt: Value(widget.existing?.createdAt ?? now),
@@ -166,6 +181,20 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                     )
                   : null,
               onTap: _pickDue,
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              initialValue: _recurrenceRule,
+              decoration: const InputDecoration(
+                labelText: 'Repeat',
+                prefixIcon: Icon(Icons.repeat),
+              ),
+              items: RecurrenceService.kRules.map((rule) {
+                return DropdownMenuItem(value: rule, child: Text(rule));
+              }).toList(),
+              onChanged: (val) {
+                if (val != null) setState(() => _recurrenceRule = val);
+              },
             ),
             const SizedBox(height: 8),
             TextFormField(

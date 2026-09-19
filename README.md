@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/flutter-3.13+-02569B.svg?logo=flutter&logoColor=white" alt="Flutter">
   <img src="https://img.shields.io/badge/rust-edition%202024-DEA584.svg?logo=rust&logoColor=white" alt="Rust">
   <img src="https://img.shields.io/badge/CRDT-Automerge-ff69b4.svg" alt="Automerge CRDT">
-  <img src="https://img.shields.io/badge/platforms-Android%20%7C%20Linux%20%7C%20Windows%20%7C%20iOS-brightgreen.svg" alt="Platforms">
+  <img src="https://img.shields.io/badge/platforms-Android%20%7C%20Linux%20%7C%20macOS%20%7C%20Windows%20%7C%20iOS-brightgreen.svg" alt="Platforms">
   <img src="https://img.shields.io/badge/tests-passing-brightgreen.svg" alt="Tests">
 </p>
 
@@ -41,6 +41,7 @@ Most task managers force a compromise:
   4. **Remote Zero-Knowledge Relay** (optional self-hosted Go WebSocket server for out-of-proximity sync).
 - **⚡ Single-Store Architecture**: Blends reactive SQLite queries ([Drift](https://drift.simonbinder.eu/)) for sub-millisecond UI rendering with Automerge binary change-tracking (`sync_changes`) for mathematical conflict resolution.
 - **📝 Full-Featured Task Management**: Markdown notes, project organization, tag filtering, priority tiers (None, Low, Medium, High), and due dates with time picker.
+- **🔁 Recurring Tasks**: Flexible recurrence rules (Daily, Weekdays, Weekly, Monthly, Yearly) that automatically advance and reschedule the next occurrence when completed.
 - **🔔 Local Notifications**: Timezone-aware due-date reminders with automated cancellation when tasks complete.
 - **📱 Home-Screen Widgets**: Native Material Design 3 widget for Android and WidgetKit extension for iOS (App Group container).
 - **🔄 One-Click Migration**: Import tasks, projects, notes, and priorities seamlessly from **Vikunja**, **Todoist**, and **Super Productivity**.

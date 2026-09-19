@@ -10,6 +10,7 @@ import 'rust_bridge/api.dart' as rust;
 import 'rust_bridge/frb_generated.dart';
 import 'services/ble_sync_service.dart';
 import 'services/notification_service.dart';
+import 'services/recurrence_service.dart';
 import 'ui/import_screen.dart';
 import 'ui/peers_screen.dart';
 import 'ui/relay_settings_screen.dart';
@@ -204,6 +205,7 @@ class TaskListScreen extends StatelessWidget {
                 leading: Checkbox(
                   value: done,
                   onChanged: (_) async {
+                    final newStatus = done ? 'open' : 'done';
                     await _upsertAndSync(
                       TasksCompanion(
                         id: Value(t.id),
@@ -212,24 +214,33 @@ class TaskListScreen extends StatelessWidget {
                         notes: Value(t.notes),
                         due: Value(t.due),
                         tags: Value(t.tags),
-                        status: Value(done ? 'open' : 'done'),
+                        status: Value(newStatus),
                         priority: Value(t.priority),
                         createdAt: Value(t.createdAt),
                         updatedAt: Value(DateTime.now()),
                       ),
                       t.id,
                     );
+                    if (newStatus == 'done') {
+                      await NotificationService.cancelForTask(t.id);
+                      await RecurrenceService.spawnNextOccurrence(
+                        completedTask: t,
+                        db: db,
+                      );
+                    }
                   },
                 ),
                 title: Text(
                   t.title,
                   style: done ? const TextStyle(decoration: TextDecoration.lineThrough) : null,
                 ),
-                subtitle: (t.due != null || t.priority > 0)
+                subtitle: (t.due != null || t.priority > 0 || RecurrenceService.extractRule(t.tags) != 'None')
                     ? Text([
                         if (t.due != null)
                           DateFormat('MMM d, HH:mm').format(t.due!),
                         if (t.priority > 0) kPriorityLabels[t.priority],
+                        if (RecurrenceService.extractRule(t.tags) != 'None')
+                          'Repeat: ${RecurrenceService.extractRule(t.tags)}',
                       ].join(' · '))
                     : null,
                 onTap: () => _openTaskDetail(context, existing: t),

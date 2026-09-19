@@ -10,6 +10,7 @@ Cycles targets **Android**, **Linux**, **iOS**, and **Windows**. This document d
 |---|---|---|---|---|---|
 | **Linux** | BLE (`bluer` / BlueZ) + LAN | Systemd / Desktop daemon | N/A (Desktop) | Rust (`bluer`, D-Bus) | Linux |
 | **Android** | Wi-Fi Direct + BLE + LAN | Android Foreground / WorkManager | AppWidgetProvider (XML + Kotlin) | Kotlin (`cycles/ble_permissions`, `cycles/wifi_direct`, `cycles/widget`) | Linux, macOS, Windows |
+| **macOS** | BLE (`CoreBluetooth`) + LAN | macOS LaunchAgent / Menu bar | N/A (Desktop) | Swift (`CoreBluetooth`) / native dylib | macOS (Local or GitHub Actions) |
 | **iOS** | BLE (Central & Peripheral) + LAN | Background Modes (`bluetooth-central`, `bluetooth-peripheral`) | WidgetKit (SwiftUI) | Swift (`CyclesBlePeripheralPlugin`, `CyclesWidgetPlugin`) | macOS |
 | **Windows** | LAN + Wi-Fi Direct + BLE | Windows Background Task | N/A (Desktop) | C++/WinRT | Windows |
 
@@ -84,7 +85,30 @@ Cycles implements a dedicated native permission plugin:
 
 ---
 
-## 4. iOS Setup & Build
+## 4. macOS Setup & Build
+
+*Note: Building native macOS applications requires a Mac with Xcode, or running via the automated GitHub Actions CI workflow.*
+
+### 4.1. Prerequisites & Compilation
+- **Xcode & Command Line Tools**
+- **Rust Toolchain**: `aarch64-apple-darwin` and `x86_64-apple-darwin`
+- **Native dylib compilation**:
+  ```bash
+  ./scripts/build_macos_rust.sh
+  ```
+  This creates a universal fat binary `libcycles_core.dylib` combining both Apple Silicon and Intel architectures.
+
+### 4.2. Local Build
+```bash
+flutter build macos --release
+```
+
+### 4.3. Cloud Build via GitHub Actions
+For contributors on Linux or Windows who do not have a physical Mac, Cycles includes a complete automated macOS release build job in [`.github/workflows/ci.yml`](file:///home/zenmi/Projects/Cycle/.github/workflows/ci.yml) running on `macos-latest`. Every push or release creates and uploads a zipped `Cycles-macOS.zip` bundle.
+
+---
+
+## 5. iOS Setup & Build
 
 *Note: Building and signing iOS binaries requires a macOS host with Xcode installed.*
 
