@@ -6,12 +6,11 @@
 # ANDROID_NDK_HOME pointing at an installed NDK.
 set -euo pipefail
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../rust"
 
 : "${ANDROID_NDK_HOME:?Set ANDROID_NDK_HOME to your NDK install, e.g. \$HOME/Android/Sdk/ndk/<version>}"
 
 cargo ndk \
   -t arm64-v8a -t armeabi-v7a -t x86_64 \
-  -o android/app/src/main/jniLibs \
-  --manifest-path rust/Cargo.toml \
+  -o ../android/app/src/main/jniLibs \
   build --release

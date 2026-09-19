@@ -305,6 +305,7 @@ pub async fn sync_with_peer_ble(peer_id: String, address: String) -> Result<BleS
 
         #[cfg(not(target_os = "linux"))]
         {
+            let _ = &address;
             0
         }
     };
