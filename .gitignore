@@ -53,6 +53,7 @@ app.*.map.json
 # Ralph's method tracks + planning doc (local only, not shipped)
 .agents/
 PLAN.md
+TOPICS.md
 design-system/
 site/
 

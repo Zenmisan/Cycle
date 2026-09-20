@@ -112,21 +112,25 @@ For contributors on Linux or Windows who do not have a physical Mac, Cycles incl
 
 *Note: Building and signing iOS binaries requires a macOS host with Xcode installed.*
 
-### 4.1. Swift BLE GATT Server Bridge
+### 5.1. Swift BLE GATT Server Bridge
 iOS apps acting as BLE Peripherals require `CBPeripheralManager`. Cycles provides a custom Swift plugin:
 [`ios/Runner/CyclesBlePeripheralPlugin.swift`](file:///home/zenmi/Projects/Cycle/ios/Runner/CyclesBlePeripheralPlugin.swift)
 - Channel: `cycles/ble_peripheral`
 - Advertises `0xFD01` service UUID with local name `Cycles-<short_id>`.
 - Publishes Characteristic `0xFD02` (`.writeWithoutResponse`, `.read`, `.notify`).
 
-### 4.2. iOS WidgetKit Integration
+### 5.2. iOS WidgetKit Integration
 - **Target**: `CyclesWidget` ([`ios/CyclesWidget/CyclesWidget.swift`](file:///home/zenmi/Projects/Cycle/ios/CyclesWidget/CyclesWidget.swift))
 - **Container**: App Group `group.com.example.cycles` shared between Flutter Runner and Widget Extension via `UserDefaults(suiteName:)`.
 - **Reload Trigger**: [`CyclesWidgetPlugin.swift`](file:///home/zenmi/Projects/Cycle/ios/Runner/CyclesWidgetPlugin.swift) invokes `WidgetCenter.shared.reloadAllTimelines()`.
 
+### 5.3. Sideloading the Pre-Built iOS IPA (.ipa)
+For users who want to run Cycles on iOS using the pre-compiled unsigned binary, an `.ipa` package is provided for sideloading via AltStore, Sideloadly, or TrollStore.
+Refer to the complete instructions, security advisories, and installation walkthrough in the [iOS Sideloading & Installation Guide](IOS_INSTALL.md) (or online at `/docs/ios-install`).
+
 ---
 
-## 5. Windows Setup & Build
+## 6. Windows Setup & Build
 
 *Note: Building native Windows applications requires Windows 10/11 with Visual Studio C++ Build Tools.*
 

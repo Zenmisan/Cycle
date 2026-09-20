@@ -197,9 +197,9 @@ Upcoming features and improvements planned for future releases:
 
 ---
 
-## Craftsmanship
+## Author
 
-Cycles is an open-source project architected and built with craftsmanship by **[Zenmi](https://github.com/Zenmisan)**.
+Cycles is an open-source project authored by **[Zenmi](https://zenmisan.web.app)**.
 
 ---
 
