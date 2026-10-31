@@ -99,6 +99,19 @@ class AppDatabase extends _$AppDatabase {
       await (delete(projects)..where((p) => p.id.equals(id))).go();
     });
   }
+
+  Future<Task?> findDuplicateRecurringTask({
+    required String projectId,
+    required String title,
+    required DateTime due,
+  }) {
+    return (select(tasks)
+          ..where((t) => t.projectId.equals(projectId))
+          ..where((t) => t.title.equals(title))
+          ..where((t) => t.status.equals('open'))
+          ..where((t) => t.due.equals(due)))
+        .getSingleOrNull();
+  }
 }
 
 QueryExecutor _openConnection() {

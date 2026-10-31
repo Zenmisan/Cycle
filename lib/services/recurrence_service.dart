@@ -101,13 +101,11 @@ class RecurrenceService {
     final nextDue = calculateNextDueDate(baseDate, rule);
 
     // Guard against duplicate occurrences if an open task with the same title and due date already exists
-    final existingDuplicate = await (db.select(db.tasks)
-          ..where((t) =>
-              t.projectId.equals(completedTask.projectId) &
-              t.title.equals(completedTask.title) &
-              t.status.equals('open') &
-              t.due.equals(nextDue)))
-        .getSingleOrNull();
+    final existingDuplicate = await db.findDuplicateRecurringTask(
+      projectId: completedTask.projectId,
+      title: completedTask.title,
+      due: nextDue,
+    );
     if (existingDuplicate != null) return existingDuplicate;
 
     final nextId = const Uuid().v4();
