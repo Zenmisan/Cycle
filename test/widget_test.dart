@@ -9,7 +9,8 @@ void main() {
     final db = AppDatabase.forTesting(NativeDatabase.memory());
     await tester.pumpWidget(CyclesApp(db: db));
     await tester.pump();
-    expect(find.text('No projects yet. Tap + to add one.'), findsOneWidget);
+    expect(find.text('No projects yet'), findsOneWidget);
+    expect(find.text('Create project'), findsOneWidget);
     await db.close();
   });
 }
