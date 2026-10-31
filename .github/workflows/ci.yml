@@ -40,7 +40,7 @@ jobs:
       - name: Run Rust Core Tests
         run: |
           cd rust
-          cargo test --verbose
+          cargo test --verbose -- --test-threads=1
           cd ..
 
       - name: Build Rust Core (release)
@@ -149,6 +149,8 @@ jobs:
         run: |
           flutter pub get
           flutter build linux --release
+          mkdir -p build/linux/x64/release/bundle/lib/
+          cp rust/target/release/libcycles_core.so build/linux/x64/release/bundle/lib/
 
       - name: Package Linux .tar.gz, .deb, and .rpm
         run: |
@@ -158,6 +160,8 @@ jobs:
           # 2. Package Debian / Ubuntu .deb
           mkdir -p deb/DEBIAN deb/usr/bin deb/usr/share/cycles deb/usr/share/applications deb/usr/share/icons/hicolor/scalable/apps
           cp -r build/linux/x64/release/bundle/* deb/usr/share/cycles/
+          mkdir -p deb/usr/share/cycles/lib/
+          cp rust/target/release/libcycles_core.so deb/usr/share/cycles/lib/
           ln -s /usr/share/cycles/cycles deb/usr/bin/cycles
           cp assets/icon/cycle.svg deb/usr/share/icons/hicolor/scalable/apps/cycles.svg
 
@@ -193,6 +197,9 @@ jobs:
         run: |
           mkdir -p AppDir/usr/bin AppDir/usr/lib AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/scalable/apps
           cp -r build/linux/x64/release/bundle/* AppDir/usr/bin/
+          cp rust/target/release/libcycles_core.so AppDir/usr/lib/
+          mkdir -p AppDir/usr/bin/lib/
+          cp rust/target/release/libcycles_core.so AppDir/usr/bin/lib/
           cp assets/icon/cycle.svg AppDir/cycles.svg
           cp assets/icon/cycle.svg AppDir/usr/share/icons/hicolor/scalable/apps/cycles.svg
 
@@ -284,6 +291,11 @@ jobs:
           flutter pub get
           flutter build windows --release
 
+      - name: Ensure Rust DLL is Bundled
+        shell: pwsh
+        run: |
+          Copy-Item -Path "rust\target\release\cycles_core.dll" -Destination "build\windows\x64\runner\Release\" -Force
+
       - name: Package Windows Portable (.zip)
         shell: pwsh
         run: |
@@ -367,6 +379,8 @@ jobs:
         run: |
           flutter pub get
           flutter build macos --release
+          mkdir -p build/macos/Build/Products/Release/Cycles.app/Contents/Frameworks/
+          cp macos/Frameworks/libcycles_core.dylib build/macos/Build/Products/Release/Cycles.app/Contents/Frameworks/
 
       - name: Create macOS Disk Image (.dmg)
         run: |
@@ -387,6 +401,20 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: aarch64-apple-ios
+
+      - name: Build iOS Rust library
+        run: |
+          cd rust
+          cargo build --release --target aarch64-apple-ios
+          cd ..
+          mkdir -p ios/Frameworks
+          cp rust/target/aarch64-apple-ios/release/libcycles_core.a ios/Frameworks/ || true
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2

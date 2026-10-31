@@ -100,6 +100,13 @@ install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}
 install(FILES "${FLUTTER_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
   COMPONENT Runtime)
 
+# Install Rust core shared library (libcycles_core.so) if built
+set(RUST_LIB_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../rust/target/release/libcycles_core.so")
+if(EXISTS "${RUST_LIB_PATH}")
+  install(FILES "${RUST_LIB_PATH}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+    COMPONENT Runtime)
+endif()
+
 foreach(bundled_library ${PLUGIN_BUNDLED_LIBRARIES})
   install(FILES "${bundled_library}"
     DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"

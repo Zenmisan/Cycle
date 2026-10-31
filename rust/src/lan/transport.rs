@@ -10,11 +10,29 @@ use std::net::{IpAddr, TcpListener, TcpStream};
 use crate::ble::framing::{Chunker, Frame, Reassembler};
 use crate::ble::tie_break::{decide_role, BleRole};
 
-const MAX_CHUNK: usize = 16 * 1024; // LAN has no MTU pressure — chunk generously.
+const MAX_CHUNK: usize = 16 * 1024; // LAN has no MTU pressure - chunk generously.
+
+fn bind_listener(port: u16) -> Result<TcpListener, String> {
+    let socket = socket2::Socket::new(
+        socket2::Domain::IPV4,
+        socket2::Type::STREAM,
+        None,
+    ).map_err(|e| e.to_string())?;
+
+    socket.set_reuse_address(true).map_err(|e| e.to_string())?;
+    #[cfg(unix)]
+    let _ = socket.set_reuse_port(true);
+
+    let address: std::net::SocketAddr = ([0, 0, 0, 0], port).into();
+    socket.bind(&address.into()).map_err(|e| e.to_string())?;
+    socket.listen(128).map_err(|e| e.to_string())?;
+
+    Ok(socket.into())
+}
 
 /// Runs one full sync round over a LAN TCP connection with `peer_addr`.
 /// `role` decides whether this side listens (Peripheral-equivalent) or
-/// connects (Central-equivalent) — reuses `decide_role` so LAN and BLE never
+/// connects (Central-equivalent) - reuses `decide_role` so LAN and BLE never
 /// disagree about who initiates for a given device-id pair.
 ///
 /// `local_id`/`remote_id` decide the role; `local_port` is where this device
@@ -34,7 +52,7 @@ pub fn sync_round(
             TcpStream::connect((peer_addr, peer_port)).map_err(|e| e.to_string())?
         }
         BleRole::Peripheral => {
-            let listener = TcpListener::bind(("0.0.0.0", local_port)).map_err(|e| e.to_string())?;
+            let listener = bind_listener(local_port)?;
             let (stream, _) = listener.accept().map_err(|e| e.to_string())?;
             stream
         }
@@ -74,13 +92,16 @@ fn receive_message(stream: &mut TcpStream) -> Result<Vec<u8>, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::atomic::{AtomicU16, Ordering};
     use std::thread;
+
+    static TEST_PORT: AtomicU16 = AtomicU16::new(43100);
 
     #[test]
     fn bidirectional_multi_kb_exchange_over_loopback() {
         // "device-b" > "device-a" lexicographically, so B is Central (connects),
-        // A is Peripheral (listens) — matches decide_role's rule exactly.
-        let port = 58234;
+        // A is Peripheral (listens) : matches decide_role's rule exactly.
+        let port = TEST_PORT.fetch_add(1, Ordering::SeqCst);
         let payload_from_a: Vec<u8> = (0..20_000).map(|i| (i % 251) as u8).collect();
         let payload_from_b: Vec<u8> = (0..15_000).map(|i| ((i * 7) % 251) as u8).collect();
 

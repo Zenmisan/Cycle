@@ -15,6 +15,7 @@ import 'ui/import_screen.dart';
 import 'ui/peers_screen.dart';
 import 'ui/relay_settings_screen.dart';
 import 'ui/task_detail_screen.dart';
+import 'ui/ui_helpers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -89,23 +90,40 @@ class ProjectListScreen extends StatelessWidget {
               ));
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.cloud_sync_outlined),
-            tooltip: 'Remote Sync (Relay)',
-            onPressed: () {
-              Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => RelaySettingsScreen(db: db),
-              ));
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'More options',
+            onSelected: (value) {
+              if (value == 'relay') {
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => RelaySettingsScreen(db: db),
+                ));
+              } else if (value == 'import') {
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => ImportScreen(db: db),
+                ));
+              }
             },
-          ),
-          IconButton(
-            icon: const Icon(Icons.download_outlined),
-            tooltip: 'Import tasks',
-            onPressed: () {
-              Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => ImportScreen(db: db),
-              ));
-            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'relay',
+                child: ListTile(
+                  leading: Icon(Icons.cloud_sync_outlined),
+                  title: Text('Remote Sync (Relay)'),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'import',
+                child: ListTile(
+                  leading: Icon(Icons.download_outlined),
+                  title: Text('Import tasks'),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -114,7 +132,14 @@ class ProjectListScreen extends StatelessWidget {
         builder: (context, snapshot) {
           final projects = snapshot.data ?? [];
           if (projects.isEmpty) {
-            return const Center(child: Text('No projects yet. Tap + to add one.'));
+            return buildEmptyState(
+              context: context,
+              icon: Icons.folder_open_outlined,
+              title: 'No projects yet',
+              subtitle: 'Create a project to organize your tasks and sync peer-to-peer.',
+              actionLabel: 'Create project',
+              onAction: () => _addProject(context),
+            );
           }
           return ListView.builder(
             itemCount: projects.length,
@@ -122,14 +147,21 @@ class ProjectListScreen extends StatelessWidget {
               final p = projects[i];
               return ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: Color(int.parse(p.color.replaceFirst('#', '0xff'))),
+                  backgroundColor: parseProjectColor(p.color),
                 ),
                 title: Text(p.name),
                 onTap: () => Navigator.of(context).push(MaterialPageRoute(
                   builder: (_) => TaskListScreen(db: db, project: p),
                 )),
                 onLongPress: () async {
-                  await db.deleteProject(p.id);
+                  final confirmed = await confirmDeleteDialog(
+                    context,
+                    title: 'Delete project',
+                    content: 'Are you sure you want to delete "${p.name}" and all its tasks? This action cannot be undone.',
+                  );
+                  if (confirmed) {
+                    await db.deleteProject(p.id);
+                  }
                 },
               );
             },
@@ -194,7 +226,14 @@ class TaskListScreen extends StatelessWidget {
         builder: (context, snapshot) {
           final tasks = snapshot.data ?? [];
           if (tasks.isEmpty) {
-            return const Center(child: Text('No tasks yet. Tap + to add one.'));
+            return buildEmptyState(
+              context: context,
+              icon: Icons.checklist_outlined,
+              title: 'No tasks yet',
+              subtitle: 'Add your first task to "${project.name}" and sync it across devices.',
+              actionLabel: 'Add task',
+              onAction: () => _openTaskDetail(context),
+            );
           }
           return ListView.builder(
             itemCount: tasks.length,
@@ -245,8 +284,15 @@ class TaskListScreen extends StatelessWidget {
                     : null,
                 onTap: () => _openTaskDetail(context, existing: t),
                 onLongPress: () async {
-                  await NotificationService.cancelForTask(t.id);
-                  await db.deleteTask(t.id);
+                  final confirmed = await confirmDeleteDialog(
+                    context,
+                    title: 'Delete task',
+                    content: 'Are you sure you want to delete "${t.title}"?',
+                  );
+                  if (confirmed) {
+                    await NotificationService.cancelForTask(t.id);
+                    await db.deleteTask(t.id);
+                  }
                 },
               );
             },

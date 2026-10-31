@@ -93,8 +93,12 @@ class AppDatabase extends _$AppDatabase {
   Future<void> deleteTask(String id) =>
       (delete(tasks)..where((t) => t.id.equals(id))).go();
 
-  Future<void> deleteProject(String id) =>
-      (delete(projects)..where((p) => p.id.equals(id))).go();
+  Future<void> deleteProject(String id) async {
+    await transaction(() async {
+      await (delete(tasks)..where((t) => t.projectId.equals(id))).go();
+      await (delete(projects)..where((p) => p.id.equals(id))).go();
+    });
+  }
 }
 
 QueryExecutor _openConnection() {

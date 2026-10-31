@@ -145,7 +145,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
           children: [
             TextFormField(
               controller: _titleController,
@@ -208,13 +208,24 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
             const SizedBox(height: 16),
             Text('Priority', style: Theme.of(context).textTheme.labelLarge),
             const SizedBox(height: 8),
-            SegmentedButton<int>(
-              segments: [
-                for (var i = 0; i < kPriorityLabels.length; i++)
-                  ButtonSegment(value: i, label: Text(kPriorityLabels[i])),
-              ],
-              selected: {_priority},
-              onSelectionChanged: (s) => setState(() => _priority = s.first),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                    child: SegmentedButton<int>(
+                      showSelectedIcon: false,
+                      segments: [
+                        for (var i = 0; i < kPriorityLabels.length; i++)
+                          ButtonSegment(value: i, label: Text(kPriorityLabels[i])),
+                      ],
+                      selected: {_priority},
+                      onSelectionChanged: (s) => setState(() => _priority = s.first),
+                    ),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 16),
             StreamBuilder<List<Project>>(

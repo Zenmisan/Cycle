@@ -10,6 +10,7 @@ import '../services/import/super_productivity_importer.dart';
 import '../services/import/todoist_importer.dart';
 import '../services/import/vikunja_importer.dart';
 import '../services/notification_service.dart';
+import 'ui_helpers.dart';
 
 enum ImportSource { vikunja, todoist, superProductivity }
 
@@ -377,9 +378,7 @@ class _ImportScreenState extends State<ImportScreen> {
                         children: _previewResult!.projects.map((p) {
                           return Chip(
                             avatar: CircleAvatar(
-                              backgroundColor: Color(int.parse(
-                                p.color.replaceFirst('#', '0xff'),
-                              )),
+                              backgroundColor: parseProjectColor(p.color),
                               radius: 6,
                             ),
                             label: Text(p.name),

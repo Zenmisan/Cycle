@@ -17,6 +17,24 @@ pub const CYCLES_WIFI_DIRECT_PORT: u16 = 47226;
 
 const MAX_CHUNK: usize = 32 * 1024; // High-throughput P2P Wi-Fi link.
 
+fn bind_listener(port: u16) -> Result<TcpListener, String> {
+    let socket = socket2::Socket::new(
+        socket2::Domain::IPV4,
+        socket2::Type::STREAM,
+        None,
+    ).map_err(|e| e.to_string())?;
+
+    socket.set_reuse_address(true).map_err(|e| e.to_string())?;
+    #[cfg(unix)]
+    let _ = socket.set_reuse_port(true);
+
+    let address: std::net::SocketAddr = ([0, 0, 0, 0], port).into();
+    socket.bind(&address.into()).map_err(|e| e.to_string())?;
+    socket.listen(128).map_err(|e| e.to_string())?;
+
+    Ok(socket.into())
+}
+
 /// Executes one synchronous transfer round over a Wi-Fi Direct IP link.
 /// Role tie-breaking determines which side connects (Central) vs listens (Peripheral).
 pub fn sync_round_wifi_direct(
@@ -34,8 +52,7 @@ pub fn sync_round_wifi_direct(
             TcpStream::connect((peer_addr, peer_port)).map_err(|e| e.to_string())?
         }
         BleRole::Peripheral => {
-            let listener =
-                TcpListener::bind(("0.0.0.0", local_port)).map_err(|e| e.to_string())?;
+            let listener = bind_listener(local_port)?;
             let (stream, _) = listener.accept().map_err(|e| e.to_string())?;
             stream
         }
@@ -75,11 +92,14 @@ fn receive_message(stream: &mut TcpStream) -> Result<Vec<u8>, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::atomic::{AtomicU16, Ordering};
     use std::thread;
+
+    static TEST_PORT: AtomicU16 = AtomicU16::new(43200);
 
     #[test]
     fn test_wifi_direct_bidirectional_exchange_over_loopback() {
-        let port = 58240;
+        let port = TEST_PORT.fetch_add(1, Ordering::SeqCst);
         let payload_from_a: Vec<u8> = (0..50_000).map(|i| (i % 251) as u8).collect();
         let payload_from_b: Vec<u8> = (0..35_000).map(|i| ((i * 13) % 251) as u8).collect();
 
@@ -158,11 +178,9 @@ mod tests {
 
         let mut session_a = SyncSession::new();
         let mut session_b = SyncSession::new();
-        let mut port = 58245;
-
         // Drive sync rounds until both sides have no more messages
         for _ in 0..10 {
-            port += 1;
+            let port = TEST_PORT.fetch_add(1, Ordering::SeqCst);
             let msg_a_opt = session_a.generate_message(&mut doc_a);
             let msg_b_opt = session_b.generate_message(&mut doc_b);
 
