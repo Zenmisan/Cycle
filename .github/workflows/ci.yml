@@ -158,12 +158,13 @@ jobs:
           tar -czvf cycles-1.0.0-linux.tar.gz -C build/linux/x64/release/bundle .
 
           # 2. Package Debian / Ubuntu .deb
-          mkdir -p deb/DEBIAN deb/usr/bin deb/usr/share/cycles deb/usr/share/applications deb/usr/share/icons/hicolor/scalable/apps
+          mkdir -p deb/DEBIAN deb/usr/bin deb/usr/share/cycles deb/usr/share/applications deb/usr/share/icons/hicolor/scalable/apps deb/usr/share/icons/hicolor/512x512/apps
           cp -r build/linux/x64/release/bundle/* deb/usr/share/cycles/
           mkdir -p deb/usr/share/cycles/lib/
           cp rust/target/release/libcycles_core.so deb/usr/share/cycles/lib/
           ln -s /usr/share/cycles/cycles deb/usr/bin/cycles
           cp assets/icon/cycle.svg deb/usr/share/icons/hicolor/scalable/apps/cycles.svg
+          cp assets/icon/cycle.png deb/usr/share/icons/hicolor/512x512/apps/cycles.png
 
           cat << 'EOF' > deb/DEBIAN/control
           Package: cycles
@@ -183,7 +184,7 @@ jobs:
           Icon=cycles
           Terminal=false
           Type=Application
-          Categories=Utility;ProjectManagement;
+          Categories=Utility;Office;ProjectManagement;
           EOF
 
           dpkg-deb --build deb cycles-1.0.0-linux.deb
@@ -195,13 +196,16 @@ jobs:
 
       - name: Package Linux .AppImage
         run: |
-          mkdir -p AppDir/usr/bin AppDir/usr/lib AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/scalable/apps
+          mkdir -p AppDir/usr/bin AppDir/usr/lib AppDir/usr/share/applications AppDir/usr/share/icons/hicolor/scalable/apps AppDir/usr/share/icons/hicolor/512x512/apps
           cp -r build/linux/x64/release/bundle/* AppDir/usr/bin/
           cp rust/target/release/libcycles_core.so AppDir/usr/lib/
           mkdir -p AppDir/usr/bin/lib/
           cp rust/target/release/libcycles_core.so AppDir/usr/bin/lib/
           cp assets/icon/cycle.svg AppDir/cycles.svg
           cp assets/icon/cycle.svg AppDir/usr/share/icons/hicolor/scalable/apps/cycles.svg
+          cp assets/icon/cycle.png AppDir/cycles.png
+          cp assets/icon/cycle.png AppDir/.DirIcon
+          cp assets/icon/cycle.png AppDir/usr/share/icons/hicolor/512x512/apps/cycles.png
 
           cat << 'EOF' > AppDir/AppRun
           #!/bin/sh
@@ -219,7 +223,16 @@ jobs:
           Exec=cycles
           Icon=cycles
           Type=Application
-          Categories=Utility;ProjectManagement;
+          Categories=Utility;Office;ProjectManagement;
+          EOF
+
+          cat << 'EOF' > AppDir/usr/share/applications/cycles.desktop
+          [Desktop Entry]
+          Name=Cycles
+          Exec=cycles
+          Icon=cycles
+          Type=Application
+          Categories=Utility;Office;ProjectManagement;
           EOF
 
           wget -q https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
