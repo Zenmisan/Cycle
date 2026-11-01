@@ -402,12 +402,18 @@ jobs:
           flutter build macos --release
           mkdir -p build/macos/Build/Products/Release/Cycles.app/Contents/Frameworks/
           cp macos/Frameworks/libcycles_core.dylib build/macos/Build/Products/Release/Cycles.app/Contents/Frameworks/
+          codesign --force --sign - build/macos/Build/Products/Release/Cycles.app/Contents/Frameworks/libcycles_core.dylib
+          codesign --force --deep --sign - build/macos/Build/Products/Release/Cycles.app
 
       - name: Create macOS Disk Image (.dmg)
         run: |
+          mkdir -p dmg_staging
+          cp -R build/macos/Build/Products/Release/Cycles.app dmg_staging/
+          ln -s /Applications dmg_staging/Applications
           hdiutil create -volname "Cycles" \
-            -srcfolder build/macos/Build/Products/Release/Cycles.app \
+            -srcfolder dmg_staging \
             -ov -format UDZO cycles-1.0.0-macos.dmg
+          rm -rf dmg_staging
 
       - name: Upload macOS Disk Image
         uses: actions/upload-artifact@v4
