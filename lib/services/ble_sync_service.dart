@@ -1,14 +1,23 @@
+import 'dart:io' show Platform;
+import 'dart:math';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 import '../data/database.dart';
+import '../data/sync_bridge.dart';
 import '../rust_bridge/api.dart' as rust;
 import '../rust_bridge/crdt.dart' as rust show TaskRecord;
 import 'ble_permission_service.dart';
 
 /// High-level service coordinating BLE device discovery, presence advertising,
-/// trust-on-first-use pairing, and CRDT synchronization with nearby peers.
+/// trust-on-first-use pairing, and CRDT synchronization with nearby peers across
+/// Android (native BLE GATT), Linux (Rust BlueZ), and iOS (CoreBluetooth).
 class BleSyncService extends ChangeNotifier {
+  static const MethodChannel _androidChannel = MethodChannel('cycles/ble_gatt');
+  static const MethodChannel _iosChannel = MethodChannel('cycles/ble_peripheral');
+
+  AppDatabase? _db;
   String? _deviceId;
   bool _isAdvertising = false;
   bool _isScanning = false;
@@ -23,23 +32,93 @@ class BleSyncService extends ChangeNotifier {
   List<rust.BlePeerIdentity> get trustedPeers => _trustedPeers;
   String? get statusMessage => _statusMessage;
 
+  void setDatabase(AppDatabase db) {
+    _db = db;
+  }
+
   /// Initializes local device ID and loads trusted peer history.
-  Future<void> init() async {
+  Future<void> init({AppDatabase? db}) async {
+    if (db != null) {
+      _db = db;
+    }
+
     try {
       _deviceId = await rust.getDeviceId();
-      _isAdvertising = await rust.isBleAdvertising();
       await refreshTrustedPeers();
+
+      if (!kIsWeb && Platform.isAndroid) {
+        _androidChannel.setMethodCallHandler(_handleAndroidPlatformCall);
+        _isAdvertising = await _androidChannel.invokeMethod<bool>('isAdvertising') ?? false;
+      } else if (!kIsWeb && Platform.isIOS) {
+        _isAdvertising = await _iosChannel.invokeMethod<bool>('isAdvertising') ?? false;
+      } else {
+        _isAdvertising = await rust.isBleAdvertising();
+      }
     } catch (e) {
       debugPrint('BleSyncService init error: $e');
     }
     notifyListeners();
   }
 
+  Future<dynamic> _handleAndroidPlatformCall(MethodCall call) async {
+    switch (call.method) {
+      case 'onPeerDiscovered':
+        final args = call.arguments as Map<dynamic, dynamic>? ?? {};
+        final devId = args['deviceId'] as String? ?? '';
+        final name = args['displayName'] as String? ?? 'Cycles-$devId';
+        final address = args['address'] as String? ?? '';
+        final rssi = args['rssi'] as int?;
+
+        if (devId.isNotEmpty && address.isNotEmpty) {
+          final existingIndex = _discoveredPeers.indexWhere((p) => p.address == address || p.deviceId == devId);
+          final peer = rust.BlePeer(
+            deviceId: devId,
+            displayName: name,
+            address: address,
+            rssi: rssi,
+          );
+
+          if (existingIndex >= 0) {
+            _discoveredPeers[existingIndex] = peer;
+          } else {
+            _discoveredPeers.add(peer);
+          }
+          notifyListeners();
+        }
+        break;
+
+      case 'onSyncMessageReceived':
+        final args = call.arguments as Map<dynamic, dynamic>? ?? {};
+        final peerAddress = args['peerAddress'] as String? ?? 'unknown';
+        final payload = args['payload'] as Uint8List? ?? Uint8List(0);
+
+        if (_db != null && payload.isNotEmpty) {
+          await handleIncomingSyncMessage(_db!, peerAddress, payload);
+          // Generate next sync response if needed and enqueue on GATT server
+          final nextResponse = await generateSyncMessageFor(peerAddress);
+          if (nextResponse != null && nextResponse.isNotEmpty) {
+            await _androidChannel.invokeMethod('enqueueServerResponse', {
+              'payload': nextResponse,
+            });
+          }
+          await refreshTrustedPeers();
+          notifyListeners();
+        }
+        break;
+    }
+  }
+
   /// Toggles BLE presence advertising (GATT server + LE advertisement).
   Future<void> toggleAdvertising() async {
     try {
       if (_isAdvertising) {
-        await rust.stopBleAdvertising();
+        if (!kIsWeb && Platform.isAndroid) {
+          await _androidChannel.invokeMethod('stopAdvertising');
+        } else if (!kIsWeb && Platform.isIOS) {
+          await _iosChannel.invokeMethod('stopAdvertising');
+        } else {
+          await rust.stopBleAdvertising();
+        }
         _isAdvertising = false;
         _statusMessage = 'Presence advertising stopped';
       } else {
@@ -49,9 +128,29 @@ class BleSyncService extends ChangeNotifier {
           notifyListeners();
           return;
         }
-        final res = await rust.startBleAdvertising();
-        _isAdvertising = true;
-        _statusMessage = res;
+
+        final devId = _deviceId ?? await rust.getDeviceId();
+        final shortId = devId.length > 8 ? devId.substring(0, 8) : devId;
+        final advName = 'Cycles-$shortId';
+
+        if (!kIsWeb && Platform.isAndroid) {
+          final res = await _androidChannel.invokeMethod<String>('startAdvertising', {
+            'deviceId': devId,
+            'name': advName,
+          });
+          _isAdvertising = true;
+          _statusMessage = res ?? 'Advertising as $advName';
+        } else if (!kIsWeb && Platform.isIOS) {
+          final res = await _iosChannel.invokeMethod<String>('startAdvertising', {
+            'name': advName,
+          });
+          _isAdvertising = true;
+          _statusMessage = res ?? 'Advertising as $advName';
+        } else {
+          final res = await rust.startBleAdvertising();
+          _isAdvertising = true;
+          _statusMessage = res;
+        }
       }
     } catch (e) {
       _statusMessage = 'Advertising error: $e';
@@ -75,11 +174,22 @@ class BleSyncService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final peers = await rust.scanBlePeers();
-      _discoveredPeers = peers;
-      _statusMessage = peers.isEmpty
-          ? 'No nearby Cycles peers found'
-          : 'Found ${peers.length} nearby peer${peers.length == 1 ? '' : 's'}';
+      if (!kIsWeb && Platform.isAndroid) {
+        _discoveredPeers.clear();
+        await _androidChannel.invokeMethod('startScan');
+        // Scan for 4 seconds to collect nearby LE advertisements
+        await Future.delayed(const Duration(seconds: 4));
+        await _androidChannel.invokeMethod('stopScan');
+        _statusMessage = _discoveredPeers.isEmpty
+            ? 'No nearby Cycles peers found'
+            : 'Found ${_discoveredPeers.length} nearby peer${_discoveredPeers.length == 1 ? '' : 's'}';
+      } else {
+        final peers = await rust.scanBlePeers();
+        _discoveredPeers = peers;
+        _statusMessage = peers.isEmpty
+            ? 'No nearby Cycles peers found'
+            : 'Found ${peers.length} nearby peer${peers.length == 1 ? '' : 's'}';
+      }
     } catch (e) {
       _statusMessage = 'Scan failed: $e';
     } finally {
@@ -116,16 +226,44 @@ class BleSyncService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final report = await rust.syncWithPeerBle(
-        peerId: peer.deviceId,
-        address: peer.address,
-      );
+      rust.BleSyncReport report;
 
-      if (report.success && report.tasksUpdated.toInt() > 0) {
-        // Rehydrate updated tasks from Automerge into Drift's relational tables
-        final all = await rust.allTasks();
-        for (final r in all) {
-          await db.upsertTask(_recordToCompanion(r));
+      if (!kIsWeb && Platform.isAndroid) {
+        // Native Android GATT Client sync
+        final outgoing = await generateSyncMessageFor(peer.deviceId) ?? Uint8List(0);
+        final response = await _androidChannel.invokeMethod<Uint8List>('syncWithPeer', {
+          'address': peer.address,
+          'peerId': peer.deviceId,
+          'payload': outgoing,
+        });
+
+        int tasksCount = 0;
+        if (response != null && response.isNotEmpty) {
+          final updated = await rust.mergeIncoming(peerId: peer.deviceId, bytes: response);
+          for (final record in updated) {
+            await db.upsertTask(_recordToCompanion(record));
+          }
+          tasksCount = updated.length;
+        }
+
+        report = rust.BleSyncReport(
+          peerId: peer.deviceId,
+          success: true,
+          message: 'Sync completed via Android GATT',
+          tasksUpdated: BigInt.from(tasksCount),
+        );
+      } else {
+        // Desktop / Linux BlueZ sync
+        report = await rust.syncWithPeerBle(
+          peerId: peer.deviceId,
+          address: peer.address,
+        );
+
+        if (report.success && report.tasksUpdated.toInt() > 0) {
+          final all = await rust.allTasks();
+          for (final r in all) {
+            await db.upsertTask(_recordToCompanion(r));
+          }
         }
       }
 

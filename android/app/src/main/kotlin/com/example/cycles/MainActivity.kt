@@ -6,6 +6,7 @@ import io.flutter.embedding.engine.FlutterEngine
 class MainActivity : FlutterActivity() {
     private var wifiDirectPlugin: WifiDirectPlugin? = null
     private var blePermissionsPlugin: BlePermissionsPlugin? = null
+    private var bleGattPlugin: BleGattPlugin? = null
     private var widgetDataPlugin: WidgetDataPlugin? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -15,6 +16,7 @@ class MainActivity : FlutterActivity() {
 
         wifiDirectPlugin = WifiDirectPlugin(context, messenger)
         blePermissionsPlugin = BlePermissionsPlugin(context, this, messenger)
+        bleGattPlugin = BleGattPlugin(context, messenger)
         widgetDataPlugin = WidgetDataPlugin(context, messenger)
     }
 
@@ -24,6 +26,9 @@ class MainActivity : FlutterActivity() {
 
         blePermissionsPlugin?.detach()
         blePermissionsPlugin = null
+
+        bleGattPlugin?.detach()
+        bleGattPlugin = null
 
         widgetDataPlugin?.detach()
         widgetDataPlugin = null

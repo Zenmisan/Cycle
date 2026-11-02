@@ -25,7 +25,7 @@ class _PeersScreenState extends State<PeersScreen> {
   @override
   void initState() {
     super.initState();
-    widget.bleService.init();
+    widget.bleService.init(db: widget.db);
   }
 
   Future<void> _handleSync(rust.BlePeer peer) async {

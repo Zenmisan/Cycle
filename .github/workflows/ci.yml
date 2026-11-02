@@ -404,6 +404,7 @@ jobs:
           cp macos/Frameworks/libcycles_core.dylib build/macos/Build/Products/Release/Cycles.app/Contents/Frameworks/
           codesign --force --sign - build/macos/Build/Products/Release/Cycles.app/Contents/Frameworks/libcycles_core.dylib
           codesign --force --deep --sign - build/macos/Build/Products/Release/Cycles.app
+          codesign --verify --deep --strict --verbose=2 build/macos/Build/Products/Release/Cycles.app
 
       - name: Create macOS Disk Image (.dmg)
         run: |
