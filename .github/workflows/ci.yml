@@ -466,3 +466,35 @@ jobs:
         with:
           name: cycles-1.0.0-ios-unsigned.ipa
           path: cycles-1.0.0-ios-unsigned.ipa
+
+  publish-release:
+    name: Publish Release Assets
+    needs: [build-android, build-linux, build-windows, build-macos, build-ios]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: downloaded_artifacts
+
+      - name: Stage Release Artifacts and Generate Checksums
+        run: |
+          mkdir -p release_dist
+          find downloaded_artifacts -type f \( -name "*.apk" -o -name "*.dmg" -o -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" -o -name "*.tar.gz" -o -name "*.exe" -o -name "*.zip" -o -name "*.ipa" \) -exec cp {} release_dist/ \;
+          cd release_dist
+          sha256sum * > SHA256SUMS
+          echo "=== Computed Checksums ==="
+          cat SHA256SUMS
+
+      - name: Publish to GitHub Release v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload v1.0.0 release_dist/* --clobber --repo ${{ github.repository }}
+
