@@ -20,13 +20,14 @@ class NotificationService {
     const androidInit = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
     );
-    const iosInit = DarwinInitializationSettings();
+    const darwinInit = DarwinInitializationSettings();
     const linuxInit = LinuxInitializationSettings(
       defaultActionName: 'Open',
     );
     const initSettings = InitializationSettings(
       android: androidInit,
-      iOS: iosInit,
+      iOS: darwinInit,
+      macOS: darwinInit,
       linux: linuxInit,
     );
     await _plugin.initialize(settings: initSettings);
@@ -42,6 +43,12 @@ class NotificationService {
           IOSFlutterLocalNotificationsPlugin
         >();
     await iosImpl?.requestPermissions(alert: true, badge: true, sound: true);
+
+    final macosImpl = _plugin
+        .resolvePlatformSpecificImplementation<
+          MacOSFlutterLocalNotificationsPlugin
+        >();
+    await macosImpl?.requestPermissions(alert: true, badge: true, sound: true);
 
     _initialized = true;
   }
@@ -75,6 +82,7 @@ class NotificationService {
             priority: Priority.high,
           ),
           iOS: DarwinNotificationDetails(),
+          macOS: DarwinNotificationDetails(),
           linux: LinuxNotificationDetails(),
         ),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,

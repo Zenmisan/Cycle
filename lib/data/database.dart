@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:path/path.dart' as p;
@@ -69,11 +71,15 @@ class AppDatabase extends _$AppDatabase {
 
   /// Absolute path to the underlying SQLite file, for handing to the Rust
   /// core so it can open its own connection (see PLAN.md's Drift<->Automerge
-  /// boundary — Rust reads/writes `sync_changes` directly). Mirrors the path
-  /// logic `driftDatabase(name: 'cycles')` uses internally — there's no public
-  /// API to ask it for the resolved path directly.
+  /// boundary — Rust reads/writes `sync_changes` directly). Matches the exact
+  /// path used by `_openConnection()` across both mobile and desktop platforms.
   static Future<String> resolveDbFilePath() async {
-    final dir = await getApplicationDocumentsDirectory();
+    final Directory dir;
+    if (Platform.isAndroid || Platform.isIOS) {
+      dir = await getApplicationDocumentsDirectory();
+    } else {
+      dir = await getApplicationSupportDirectory();
+    }
     return p.join(dir.path, 'cycles.sqlite');
   }
 
@@ -115,5 +121,16 @@ class AppDatabase extends _$AppDatabase {
 }
 
 QueryExecutor _openConnection() {
-  return driftDatabase(name: 'cycles');
+  return driftDatabase(
+    name: 'cycles',
+    native: DriftNativeOptions(
+      databaseDirectory: () async {
+        if (Platform.isAndroid || Platform.isIOS) {
+          return await getApplicationDocumentsDirectory();
+        } else {
+          return await getApplicationSupportDirectory();
+        }
+      },
+    ),
+  );
 }

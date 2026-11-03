@@ -19,13 +19,26 @@ import 'ui/ui_helpers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Always init — the CRDT core is real functionality, not just the debug
-  // ping demo (that button below stays kDebugMode-gated on its own).
-  await RustLib.init();
   final db = AppDatabase();
-  await initCrdtCore(db);
-  await NotificationService.init();
+
+  // Run the app immediately so Flutter attaches to the window and responds
+  // to the macOS window manager without spinning or hanging in Activity Monitor.
   runApp(CyclesApp(db: db));
+
+  // Initialize native Rust CRDT core and notification services asynchronously
+  // without blocking the main event loop or window display.
+  try {
+    await RustLib.init();
+    await initCrdtCore(db);
+  } catch (e, stack) {
+    debugPrint('[Cycles] CRDT core initialization error: $e\n$stack');
+  }
+
+  try {
+    await NotificationService.init();
+  } catch (e, stack) {
+    debugPrint('[Cycles] NotificationService initialization error: $e\n$stack');
+  }
 }
 
 class CyclesApp extends StatelessWidget {
