@@ -69,17 +69,26 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
-  /// Absolute path to the underlying SQLite file, for handing to the Rust
-  /// core so it can open its own connection (see PLAN.md's Drift<->Automerge
-  /// boundary — Rust reads/writes `sync_changes` directly). Matches the exact
-  /// path used by `_openConnection()` across both mobile and desktop platforms.
-  static Future<String> resolveDbFilePath() async {
+  /// Helper to resolve and ensure the database directory exists on disk.
+  static Future<Directory> _resolveDatabaseDir() async {
     final Directory dir;
     if (Platform.isAndroid || Platform.isIOS) {
       dir = await getApplicationDocumentsDirectory();
     } else {
       dir = await getApplicationSupportDirectory();
     }
+    if (!dir.existsSync()) {
+      await dir.create(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Absolute path to the underlying SQLite file, for handing to the Rust
+  /// core so it can open its own connection (see PLAN.md's Drift<->Automerge
+  /// boundary — Rust reads/writes `sync_changes` directly). Matches the exact
+  /// path used by `_openConnection()` across both mobile and desktop platforms.
+  static Future<String> resolveDbFilePath() async {
+    final dir = await _resolveDatabaseDir();
     return p.join(dir.path, 'cycles.sqlite');
   }
 
@@ -124,13 +133,7 @@ QueryExecutor _openConnection() {
   return driftDatabase(
     name: 'cycles',
     native: DriftNativeOptions(
-      databaseDirectory: () async {
-        if (Platform.isAndroid || Platform.isIOS) {
-          return await getApplicationDocumentsDirectory();
-        } else {
-          return await getApplicationSupportDirectory();
-        }
-      },
+      databaseDirectory: () async => await AppDatabase._resolveDatabaseDir(),
     ),
   );
 }

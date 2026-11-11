@@ -1,6 +1,9 @@
+import 'dart:io' show File, Platform;
+
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:flutter_rust_bridge/flutter_rust_bridge.dart' show ExternalLibrary;
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
@@ -28,7 +31,15 @@ void main() async {
   // Initialize native Rust CRDT core and notification services asynchronously
   // without blocking the main event loop or window display.
   try {
-    await RustLib.init();
+    ExternalLibrary? externalLibrary;
+    if (Platform.isMacOS) {
+      final exeDir = File(Platform.resolvedExecutable).parent;
+      final bundledDylib = File('${exeDir.path}/../Frameworks/libcycles_core.dylib');
+      if (bundledDylib.existsSync()) {
+        externalLibrary = ExternalLibrary.open(bundledDylib.path);
+      }
+    }
+    await RustLib.init(externalLibrary: externalLibrary);
     await initCrdtCore(db);
   } catch (e, stack) {
     debugPrint('[Cycles] CRDT core initialization error: $e\n$stack');
