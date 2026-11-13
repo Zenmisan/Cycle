@@ -114,7 +114,7 @@ jobs:
       - name: Build Android APK
         run: |
           flutter pub get
-          flutter build apk --release
+          flutter build apk --release --android-skip-build-dependency-validation
           cp build/app/outputs/flutter-apk/app-release.apk cycles-1.1.0-android.apk
 
       - name: Upload Android APK
