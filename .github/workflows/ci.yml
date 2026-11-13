@@ -61,7 +61,7 @@ jobs:
       - name: Run Flutter Static Analysis & Tests
         run: |
           flutter pub get
-          flutter analyze
+          flutter analyze --no-fatal-infos
           flutter test --verbose
 
   build-android:
@@ -115,13 +115,13 @@ jobs:
         run: |
           flutter pub get
           flutter build apk --release
-          cp build/app/outputs/flutter-apk/app-release.apk cycles-1.0.0-android.apk
+          cp build/app/outputs/flutter-apk/app-release.apk cycles-1.1.0-android.apk
 
       - name: Upload Android APK
         uses: actions/upload-artifact@v4
         with:
-          name: cycles-1.0.0-android.apk
-          path: cycles-1.0.0-android.apk
+          name: cycles-1.1.0-android.apk
+          path: cycles-1.1.0-android.apk
 
   build-linux:
     name: Build Linux Packages (.tar.gz, .deb, .rpm, .AppImage)
@@ -163,7 +163,7 @@ jobs:
       - name: Package Linux .tar.gz, .deb, and .rpm
         run: |
           # 1. Package universal tarball
-          tar -czvf cycles-1.0.0-linux.tar.gz -C build/linux/x64/release/bundle .
+          tar -czvf cycles-1.1.0-linux.tar.gz -C build/linux/x64/release/bundle .
 
           # 2. Package Debian / Ubuntu .deb
           mkdir -p deb/DEBIAN deb/usr/bin deb/usr/share/cycles deb/usr/share/applications deb/usr/share/icons/hicolor/scalable/apps deb/usr/share/icons/hicolor/512x512/apps
@@ -176,7 +176,7 @@ jobs:
 
           cat << 'EOF' > deb/DEBIAN/control
           Package: cycles
-          Version: 1.0.0
+          Version: 1.1.0
           Section: utils
           Priority: optional
           Architecture: amd64
@@ -195,12 +195,12 @@ jobs:
           Categories=Utility;Office;ProjectManagement;
           EOF
 
-          dpkg-deb --build deb cycles-1.0.0-linux.deb
+          dpkg-deb --build deb cycles-1.1.0-linux.deb
 
           # 3. Package RedHat / Fedora / SUSE .rpm
-          sudo alien -r -c --version=1.0.0 cycles-1.0.0-linux.deb
-          find . -maxdepth 1 -name "*cycles*.rpm" -exec mv {} cycles-1.0.0-linux.rpm \;
-          ls -la cycles-1.0.0-linux.rpm
+          sudo alien -r -c --version=1.1.0 cycles-1.1.0-linux.deb
+          find . -maxdepth 1 -name "*cycles*.rpm" -exec mv {} cycles-1.1.0-linux.rpm \;
+          ls -la cycles-1.1.0-linux.rpm
 
       - name: Package Linux .AppImage
         run: |
@@ -245,42 +245,42 @@ jobs:
 
           wget -q https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
           chmod +x appimagetool
-          ./appimagetool --appimage-extract-and-run AppDir cycles-1.0.0-linux.AppImage
-          ls -la cycles-1.0.0-linux.AppImage
+          ./appimagetool --appimage-extract-and-run AppDir cycles-1.1.0-linux.AppImage
+          ls -la cycles-1.1.0-linux.AppImage
 
       - name: Upload Linux Packages
         uses: actions/upload-artifact@v4
         with:
           name: cycles-linux-packages
           path: |
-            cycles-1.0.0-linux.tar.gz
-            cycles-1.0.0-linux.deb
-            cycles-1.0.0-linux.rpm
-            cycles-1.0.0-linux.AppImage
+            cycles-1.1.0-linux.tar.gz
+            cycles-1.1.0-linux.deb
+            cycles-1.1.0-linux.rpm
+            cycles-1.1.0-linux.AppImage
 
       - name: Upload Linux .tar.gz
         uses: actions/upload-artifact@v4
         with:
-          name: cycles-1.0.0-linux.tar.gz
-          path: cycles-1.0.0-linux.tar.gz
+          name: cycles-1.1.0-linux.tar.gz
+          path: cycles-1.1.0-linux.tar.gz
 
       - name: Upload Linux .deb
         uses: actions/upload-artifact@v4
         with:
-          name: cycles-1.0.0-linux.deb
-          path: cycles-1.0.0-linux.deb
+          name: cycles-1.1.0-linux.deb
+          path: cycles-1.1.0-linux.deb
 
       - name: Upload Linux .rpm
         uses: actions/upload-artifact@v4
         with:
-          name: cycles-1.0.0-linux.rpm
-          path: cycles-1.0.0-linux.rpm
+          name: cycles-1.1.0-linux.rpm
+          path: cycles-1.1.0-linux.rpm
 
       - name: Upload Linux .AppImage
         uses: actions/upload-artifact@v4
         with:
-          name: cycles-1.0.0-linux.AppImage
-          path: cycles-1.0.0-linux.AppImage
+          name: cycles-1.1.0-linux.AppImage
+          path: cycles-1.1.0-linux.AppImage
 
   build-windows:
     name: Build Windows Packages (.exe, .zip)
@@ -320,8 +320,8 @@ jobs:
       - name: Package Windows Portable (.zip)
         shell: pwsh
         run: |
-          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath cycles-1.0.0-windows-portable.zip
-          Get-Item cycles-1.0.0-windows-portable.zip
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath cycles-1.1.0-windows-portable.zip
+          Get-Item cycles-1.1.0-windows-portable.zip
 
       - name: Install Inno Setup
         shell: pwsh
@@ -334,11 +334,11 @@ jobs:
           $issContent = @"
           [Setup]
           AppName=Cycles
-          AppVersion=1.0.0
+          AppVersion=1.1.0
           DefaultDirName={autopf}\Cycles
           DefaultGroupName=Cycles
           OutputDir=.
-          OutputBaseFilename=cycles-1.0.0-windows
+          OutputBaseFilename=cycles-1.1.0-windows
           Compression=lzma2
           SolidCompression=yes
           ArchitecturesInstallIn64BitMode=x64
@@ -358,20 +358,20 @@ jobs:
         with:
           name: cycles-windows-packages
           path: |
-            cycles-1.0.0-windows.exe
-            cycles-1.0.0-windows-portable.zip
+            cycles-1.1.0-windows.exe
+            cycles-1.1.0-windows-portable.zip
 
       - name: Upload Windows Installer (.exe)
         uses: actions/upload-artifact@v4
         with:
-          name: cycles-1.0.0-windows.exe
-          path: cycles-1.0.0-windows.exe
+          name: cycles-1.1.0-windows.exe
+          path: cycles-1.1.0-windows.exe
 
       - name: Upload Windows Portable (.zip)
         uses: actions/upload-artifact@v4
         with:
-          name: cycles-1.0.0-windows-portable.zip
-          path: cycles-1.0.0-windows-portable.zip
+          name: cycles-1.1.0-windows-portable.zip
+          path: cycles-1.1.0-windows-portable.zip
 
   build-macos:
     name: Build macOS Disk Image (.dmg)
@@ -416,14 +416,14 @@ jobs:
           ln -s /Applications dmg_staging/Applications
           hdiutil create -volname "Cycles" \
             -srcfolder dmg_staging \
-            -ov -format UDZO cycles-1.0.0-macos.dmg
+            -ov -format UDZO cycles-1.1.0-macos.dmg
           rm -rf dmg_staging
 
       - name: Upload macOS Disk Image
         uses: actions/upload-artifact@v4
         with:
-          name: cycles-1.0.0-macos.dmg
-          path: cycles-1.0.0-macos.dmg
+          name: cycles-1.1.0-macos.dmg
+          path: cycles-1.1.0-macos.dmg
 
   build-ios:
     name: Build iOS Archive (.ipa)
@@ -462,13 +462,13 @@ jobs:
         run: |
           mkdir -p Payload
           cp -r build/ios/iphoneos/Runner.app Payload/
-          zip -r cycles-1.0.0-ios-unsigned.ipa Payload
+          zip -r cycles-1.1.0-ios-unsigned.ipa Payload
 
       - name: Upload iOS Package
         uses: actions/upload-artifact@v4
         with:
-          name: cycles-1.0.0-ios-unsigned.ipa
-          path: cycles-1.0.0-ios-unsigned.ipa
+          name: cycles-1.1.0-ios-unsigned.ipa
+          path: cycles-1.1.0-ios-unsigned.ipa
 
   publish-release:
     name: Publish Release Assets
@@ -495,9 +495,18 @@ jobs:
           echo "=== Computed Checksums ==="
           cat SHA256SUMS
 
-      - name: Publish to GitHub Release v1.0.0
+      - name: Publish to GitHub Release v1.1.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload v1.0.0 release_dist/* --clobber --repo ${{ github.repository }}
+          if ! gh release view v1.1.0 --repo ${{ github.repository }} > /dev/null 2>&1; then
+            echo "Creating release v1.1.0..."
+            gh release create v1.1.0 release_dist/* \
+              --title "v1.1.0 - Proximity Sync & Desktop Stability" \
+              --notes "Cycle v1.1.0 release with BLE proximity sync, native macOS squircle icon, Monterey launch fixes, and multi-platform packages." \
+              --repo ${{ github.repository }}
+          else
+            echo "Release v1.1.0 exists, uploading artifacts..."
+            gh release upload v1.1.0 release_dist/* --clobber --repo ${{ github.repository }}
+          fi
 

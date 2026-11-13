@@ -8,19 +8,19 @@ DEST_DIR="Releases"
 mkdir -p "$DEST_DIR"
 
 ARTIFACTS=(
-  "cycles-1.0.0-windows.exe"
-  "cycles-1.0.0-windows-portable.zip"
-  "cycles-1.0.0-linux.AppImage"
-  "cycles-1.0.0-linux.deb"
-  "cycles-1.0.0-linux.rpm"
-  "cycles-1.0.0-linux.tar.gz"
-  "cycles-1.0.0-android.apk"
-  "cycles-1.0.0-macos.dmg"
-  "cycles-1.0.0-ios-unsigned.ipa"
+  "cycles-1.1.0-windows.exe"
+  "cycles-1.1.0-windows-portable.zip"
+  "cycles-1.1.0-linux.AppImage"
+  "cycles-1.1.0-linux.deb"
+  "cycles-1.1.0-linux.rpm"
+  "cycles-1.1.0-linux.tar.gz"
+  "cycles-1.1.0-android.apk"
+  "cycles-1.1.0-macos.dmg"
+  "cycles-1.1.0-ios-unsigned.ipa"
 )
 
 for art in "${ARTIFACTS[@]}"; do
-  if [ -f "$DEST_DIR/$art" ] && [ "$art" = "cycles-1.0.0-linux.AppImage" ]; then
+  if [ -f "$DEST_DIR/$art" ] && [ "$art" = "cycles-1.1.0-linux.AppImage" ]; then
     echo "Already downloaded: $art"
     continue
   fi
